@@ -1075,7 +1075,7 @@ ggplot(time_partisan, aes(x = decade, y = percentage_wins, fill = outcome)) +
   theme_minimal()
 
 
-#How many NGO plaintiffs?
+#How many plaintiffs?-------
 ngo_plaintiff <- final.judge.matches.ex %>%
   filter(outcome %in% c("defendant", "plaintiff")) %>%
   filter(str_detect(plt_typ, "ngo") | str_detect(plt_typ, "civic_assn"))
@@ -1083,6 +1083,7 @@ ngo_plaintiff <- final.judge.matches.ex %>%
 biz_plaintiff <- final.judge.matches.ex %>%
   filter(str_detect(plt_typ, "industry"))
 
+#Random statistical stuff for interest---
 hist(final.judge.matches.ex$jcs.score.dw[final.judge.matches.ex$Party.of.Appointing.President..1.=="Republican"], freq=FALSE)
 hist(final.judge.matches.ex$jcs.score.dw[final.judge.matches.ex$Party.of.Appointing.President..1.=="Democratic"], freq=FALSE)
 
