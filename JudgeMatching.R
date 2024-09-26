@@ -9,15 +9,16 @@ library(tidyverse)
 library(lubridate)
 library(readr)
 #install.packages("fuzzyjoin")
+# All the data is in the "raw data for matching" folder in the git hub repository
 
 # Load bonica data
-bonicajudge <- read.csv('/Users/Cordeliavanderveer/Downloads/bonica_sen_fed_judges.csv')
+bonicajudge <- read.csv('bonica_sen_fed_judges.csv')
 
 # Load fjc data
-fjc <- read.csv('/Users/Cordeliavanderveer/Downloads/US_Federal_Judges.csv')
+fjc <- read.csv('US_Federal_Judges.csv')
 
 # Load docket data
-final.resl <- read.csv('/Users/Cordeliavanderveer/Downloads/07-Val_Cor_Clean_Meta.csv')
+final.resl <- read.csv('07-Val_Cor_Clean_Meta.csv')
 
 # Clean bonica/sen data------
 fjc_clean <- fjc %>%
@@ -172,7 +173,7 @@ filtered_matches <- matched_docket %>%
 # Check to see if district in the RESL and Bonica/Sen data matches
 
 # Load crosswalk data and join to RESL data
-court_crosswalk <- read.csv('/Users/Cordeliavanderveer/Downloads/unique_court_values_crosswalk.csv')
+court_crosswalk <- read.csv('unique_court_values_crosswalk.csv')
 court_crosswalk <- court_crosswalk %>%
   rename(
     "court" = "Court"
@@ -190,7 +191,7 @@ filtered_matches <- filtered_matches %>%
 #write.csv(manual_fjc_crosswalk, "manual_fjc_crosswalk.csv")
 
 # Load new crosswalk data, drop notes, and join by Court.Name
-court_crosswalk_fjcbonica <- read.csv('/Users/Cordeliavanderveer/Downloads/Judge Matching, New Data/manual_fjc_crosswalk.csv')
+court_crosswalk_fjcbonica <- read.csv('manual_fjc_crosswalk.csv')
 
 court_crosswalk_fjcbonica$Notes <- NULL
 
