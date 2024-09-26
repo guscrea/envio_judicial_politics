@@ -10,8 +10,11 @@ library(lubridate)
 library(readr)
 
 # Load all data sets to combine into final dataset-----
+# All data has been matched/handcoded, this process just merges everything together
+# All data in this .R file is in the "final data after matching folder" in the git hub repository
 
 # Load perfect matches that did not need to be hand checked (3853 final)
+# Perf and district check are in the same dataset, which why it is loaded twice but just filtered differently
 perf.final <- read.csv('perf_match_one_distinct.csv')
 perf.final <- perf.final %>%
   filter(court_mismatch == 1)
@@ -66,10 +69,10 @@ write.csv(final.judge.matches, "final.judge.matches.csv")
 
 n_distinct(final.judge.matches$ID)
 
-
+# Data matching/joining is complete! YAY
 
 # Start of exploratory visualizations-----
-# Prepare judge data
+# Remove magistrates, add in a few extra variables for clarity
 final.judge.matches.ex <- final_judge_matches
 final.judge.matches.ex$district <- NULL
 
