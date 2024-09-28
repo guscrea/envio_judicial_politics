@@ -3,6 +3,7 @@
 # Script by Chris Rea
 
 library(tidyverse)
+library(patchwork)
 
 # Read in Court Listener Data ####
 
@@ -85,7 +86,8 @@ cl_e <- left_join(
         )
       ) %>%
     rename(
-      "assigned_to_id" = "id"
+      "assigned_to_id" = "id",
+      "source_pa" = "source"
       ),
   by = "assigned_to_id"
   )
@@ -94,7 +96,11 @@ cl_e <- left_join(
 cl_e <- cl_e %>%
   mutate(
     yr_file = year(date_filed),
-    join_id = str_c(fjc_court_id,"-",docket_number_core,"-", yr_file)
+    # clean case name
+    case_name_clean = str_to_lower(case_name),
+    case_name_clean = str_remove_all(case_name_clean, "<b>|</b>|<font color=\"red\">|</font>|(ps)|(ss)"),
+    plt_fl = str_sub(trimws(case_name_clean),1,1),
+    join_id = str_c(fjc_court_id,"-",docket_number_core,"-", yr_file,"-",plt_fl)
   ) %>%
   # assess uniqueness of join_id
   group_by(
@@ -123,6 +129,15 @@ cl_e %>%
     ylim = c(0,2000)
   )
 
+# simple full cl_e df
+cl_e_simp <- cl_e %>%
+  select(
+    id, yr_file
+  ) %>%
+  mutate(
+    data_type = "All raw data from Court Listener\n(n = 34,263)"
+  )
+
 # IMC Global and BP Deepwater Horizon cases immediately pop out. Drop those
 # cases.
 cl_e_clean <- cl_e %>%
@@ -132,18 +147,46 @@ cl_e_clean <- cl_e %>%
     #!is.na(assigned_to_id)
   )
 
-# distribution of years for cleaned data
-cl_e_clean %>%
+# make simple clean df
+cl_e_clean_simp <- cl_e_clean %>%
+  select(
+    id, yr_file
+  ) %>%
+  mutate(
+    data_type = "Clean Data (No BP or IMC)\n(n = 29,174)"
+  )
+
+# plot distribution of years for all and for cleaned data, for comparison
+plot_all_clean <- bind_rows(
+  cl_e_clean_simp,
+  cl_e_simp
+  ) %>%
   ggplot(
     aes(
       x = yr_file,
+      group = data_type,
+      fill = data_type
     )
   ) +
-  geom_bar() + 
+  geom_bar(
+    position = "identity",
+    alpha = .7,
+    #color = "#777777"
+  ) +
+  scale_fill_grey() + 
+  #scale_fill_viridis_d() +
+  labs(
+    x = NULL,
+    y = "Count of Cases",
+    fill = "Data"
+  ) +
   theme_linedraw() +
   coord_cartesian(
     ylim = c(0,2000)
   )
+
+# plot comparison
+plot_all_clean
 
 # after dropping BP and IMC Global cases, how many observations do we have with
 # judges recorded?
@@ -152,51 +195,83 @@ cl_e_clean %>%
 cl_e_clean_j <- cl_e_clean %>%
   filter(
     !is.na(assigned_to_id)
-  ) %>%
-  # assess uniqueness
-  group_by(
-    join_id
-  ) %>%
-  mutate(
-    n = row_number() # don't count number of duplicates; label by row numbers
-  ) %>%
-  ungroup()
+  )
 
 # --> 21,900
 # --> So we lose ~25% for our original observations (7,274). That's a lot!
 # Certainly need to investigate if those cases for which we do not observe the
 # the judge are systematically different from those where we do.
 
-# distribution of years for 
-cl_e_clean_j %>%
+# make simple clean df with judges
+cl_e_clean_j_simp <- cl_e_clean_j %>%
+  select(
+    id, yr_file
+  ) %>%
+  mutate(
+    data_type = "Observations with judge recorded\n(n = 21,900)"
+  )
+
+# plot distribution of years for cleaned data and cleaned data with judges, for
+# comparison
+plot_clean_j <- bind_rows(
+  cl_e_clean_simp %>%
+    mutate(
+      data_type = "Clean data (No BP or IMC)\n(n = 29,174)"
+    ),
+  cl_e_clean_j_simp
+  ) %>%
   ggplot(
     aes(
       x = yr_file,
+      group = data_type,
+      fill = data_type
     )
   ) +
-  geom_bar() + 
+  geom_bar(
+    position = "identity",
+    alpha = .7,
+    #color = "#777777"
+  ) +
+  scale_fill_grey() + 
+  #scale_fill_viridis_d() +
+  labs(
+    x = NULL,
+    y = "Count of Cases",
+    fill = "Data"
+  ) +
   theme_linedraw() +
   coord_cartesian(
-    ylim = c(0,2000)
-    )
+    ylim = c(0,1250)
+  )
+  
+# plot the plot
+ plot_clean_j
 
-# for now, drop non-unique join IDs
-cl_e_clean_j <- cl_e_clean_j %>%
-  filter(
-    n == 1
-    )
+# check uniqueness of join_id in cl_e_clean_j; for now, drop non-unique
+# observations (21,900 --> 21,730)
+ cl_e_clean_j <- cl_e_clean_j %>%
+   group_by(
+     join_id
+   ) %>%
+   mutate(
+     n = n()
+   ) %>%
+   filter(
+     n == 1
+   )
 
-# get just judge info for join
+# retain just judge info for join to FJC data
 cl_e_clean_j <- cl_e_clean_j %>%
   select(
+    id,
     join_id,
     case_name,
     assigned_to_str,
     assigned_to_id,
     referred_to_str,
     referred_to_id,
-    name_first:source.y
-  )
+    name_first:plt_fl
+    )
 
 # Read in FJC data ####
 
@@ -219,43 +294,44 @@ fjc_e %>%
   geom_bar() + 
   theme_linedraw() +
   coord_cartesian(
-    ylim = c(0,2000)
+    ylim = c(0,1250)
   )
 
 # make dist-docket number for join to CL data
 fjc_e <- fjc_e %>%
   mutate(
-    join_id = str_c(DISTRICT,"-",DOCKET,"-", yr_file)
+    # clean case name
+    PLT_clean = str_to_lower(PLT),
+    PLT_clean = str_remove_all(PLT_clean, "<b>|</b>|<font color=\"red\">|</font>|(ps)|(ss)"),
+    plt_fl = str_sub(trimws(PLT_clean),1,1),
+    join_id = str_c(DISTRICT,"-",DOCKET,"-", yr_file,"-",plt_fl)
   ) %>%
   # assess uniqueness
   group_by(
     join_id
   ) %>%
   mutate(
-    n = row_number()
+    n = n()
   ) %>%
   ungroup() %>%
   filter(
-    n == 1
+    n == 1 # drops  from 29.9 to 29.3
   )
 
-# Winnow down FJC data for join ####
-
-# drop fjc observations with duplicate join IDs
-fjc_e_for_join <- fjc_e %>%
-  filter(
-    n == 1
-  ) # drops  from 29.9 to 29.2
+# Join  CL data to FJC data ####
 
 # try join
 fjc_cl <- left_join(
-  fjc_e_for_join,
-  cl_e_clean_j,
+  fjc_e,
+  cl_e_clean_j %>%
+    select(
+      -yr_file
+    ),
   by = "join_id"
 )
 
-# examine join results
-fjc_cl_look <- fjc_cl %>%
+# clean up join results
+fjc_cl <- fjc_cl %>%
   select(
     CIRCUIT,
     DISTRICT,
@@ -274,16 +350,82 @@ fjc_cl_look <- fjc_cl %>%
     DEF_wl,
     REGION,
     join_id,
+    id,
     assigned_to_str,
     assigned_to_id,
     referred_to_str,
     referred_to_id,
-    name_first:source.y
+    name_first:plt_fl.y
   )
 
-fjc_cl_look_j <- fjc_cl_look %>%
+# create df with only those observations that have judges
+fjc_cl_j <- fjc_cl %>%
   filter(
-    !is.na(assigned_to_str)
+    !is.na(assigned_to_id)
+  )
+
+# make simple df of joined cl-fjc data
+fjc_cl_simp <- fjc_cl_j %>%
+  select(
+    id, yr_file
+  ) %>%
+  mutate(
+    data_type = "Final data matched to FJC\n(n = 19,202)"
   )
 
 
+# plot distribution of years for cleaned data and cleaned data with judges, for
+# comparison
+plot_cl_fjc <- bind_rows(
+  cl_e_clean_simp %>%
+    mutate(
+      data_type = "Clean data (No BP or IMC)\n(n = 29,174)"
+    ),
+  cl_e_clean_j_simp %>%
+    mutate(
+      data_type = "Clean data with judge recorded\n(n = 21,900)"
+    ),
+  fjc_cl_simp
+) %>%
+  ggplot(
+    aes(
+      x = yr_file,
+      group = data_type,
+      fill = data_type
+    )
+  ) +
+  geom_bar(
+    position = "identity",
+    alpha = .7,
+    #color = "#777777"
+  ) +
+  scale_fill_grey() + 
+  #scale_fill_viridis_d() +
+  labs(
+    x = NULL,
+    y = "Count of Cases",
+    fill = "Data"
+  ) +
+  theme_linedraw() +
+  coord_cartesian(
+    ylim = c(0,1250)
+  )
+
+# plot the plot
+plot_cl_fjc
+
+# Plot distributions of data together ####
+
+# plot distributions in relation
+plot_all_clean / plot_cl_fjc +
+  plot_annotation(tag_levels = 'A')  & 
+  theme(plot.tag = element_text(face = "bold"))
+
+# save combo plot 
+ggsave(
+  "Data_cleaning_distributions.png",
+  units = "mm",
+  width = 250,
+  height =  200,
+  path = "Figures"
+)
