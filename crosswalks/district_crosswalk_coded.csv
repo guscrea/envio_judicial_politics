@@ -1,0 +1,91 @@
+OBJECTID,STATE_TERR,Judicial_2,REGION,FJC_dist_code
+1,Alabama,Middle District,SOUTH,27
+2,Alabama,Northern District,SOUTH,26
+3,Alabama,Southern District,SOUTH,28
+4,Alaska,District of Alaska,PACIFIC,7-
+5,Arizona,District of Arizona,WESTERN INTERIOR,70
+6,Arkansas,Eastern District,SOUTH,60
+7,Arkansas,Western District,SOUTH,61
+8,California,Central District,PACIFIC,73
+9,California,Eastern District,PACIFIC,72
+10,California,Northern District,PACIFIC,71
+11,California,Southern District,PACIFIC,74
+12,Colorado,District of Colorado,WESTERN INTERIOR,82
+13,Connecticut,District of Connecticut,NORTHEAST/MID-ATLANTIC,5
+14,Delaware,District of Delaware,NORTHEAST/MID-ATLANTIC,11
+15,District of Columbia,District of Columbia,NORTHEAST/MID-ATLANTIC,90
+16,Florida,Middle District,SOUTH,3A
+17,Florida,Northern District,SOUTH,29
+18,Florida,Southern District,SOUTH,3C
+19,Georgia,Middle District,SOUTH,3G
+20,Georgia,Northern District,SOUTH,3E
+21,Georgia,Southern District,SOUTH,3J
+22,Hawaii,District of Hawaii,PACIFIC,75
+23,Idaho,District of Idaho,WESTERN INTERIOR,76
+24,Illinois,Central District,MIDWEST,53
+25,Illinois,Northern District,MIDWEST,52
+26,Illinois,Southern District,MIDWEST,54
+27,Indiana,Northern District,MIDWEST,55
+28,Indiana,Southern District,MIDWEST,56
+29,Iowa,Northern District,MIDWEST,62
+30,Iowa,Southern District,MIDWEST,63
+31,Kansas,District of Kansas,PLAINS,83
+32,Kentucky,Eastern District,SOUTH,43
+33,Kentucky,Western District,SOUTH,44
+34,Louisiana,Eastern District,SOUTH,3L
+35,Louisiana,Middle District,SOUTH,3N
+36,Louisiana,Western District,SOUTH,36
+37,Maine,District of Maine,NORTHEAST/MID-ATLANTIC,0
+38,Maryland,District of Maryland,NORTHEAST/MID-ATLANTIC,16
+39,Massachusetts,District of Massachusetts,NORTHEAST/MID-ATLANTIC,1
+40,Michigan,Eastern District,MIDWEST,45
+41,Michigan,Western District,MIDWEST,46
+42,Minnesota,District of Minnesota,MIDWEST,64
+43,Mississippi,Northern District,SOUTH,37
+44,Mississippi,Southern District,SOUTH,38
+45,Missouri,Eastern District,MIDWEST,65
+46,Missouri,Western District,MIDWEST,66
+47,Montana,District of Montana,WESTERN INTERIOR,77
+48,Nebraska,District of Nebraska,PLAINS,67
+49,Nevada,District of Nevada,WESTERN INTERIOR,78
+50,New Hampshire,District of New Hampshire,NORTHEAST/MID-ATLANTIC,2
+51,New Jersey,District of New Jersey,NORTHEAST/MID-ATLANTIC,12
+52,New Mexico,District of New Mexico,WESTERN INTERIOR,84
+53,New York,Eastern District,NORTHEAST/MID-ATLANTIC,7
+54,New York,Northern District,NORTHEAST/MID-ATLANTIC,6
+55,New York,Southern District,NORTHEAST/MID-ATLANTIC,8
+56,New York,Western District,NORTHEAST/MID-ATLANTIC,9
+57,North Carolina,Eastern District,SOUTH,17
+58,North Carolina,Middle District,SOUTH,18
+59,North Carolina,Western District,SOUTH,19
+60,North Dakota,District of North Dakota,PLAINS,68
+61,Ohio,Northern District,MIDWEST,47
+62,Ohio,Southern District,MIDWEST,48
+63,Oklahoma,Eastern District,PLAINS,86
+64,Oklahoma,Northern District,PLAINS,85
+65,Oklahoma,Western District,PLAINS,87
+66,Oregon,District of Oregon,PACIFIC,79
+67,Pennsylvania,Eastern District,NORTHEAST/MID-ATLANTIC,13
+68,Pennsylvania,Middle District,NORTHEAST/MID-ATLANTIC,14
+69,Pennsylvania,Western District,NORTHEAST/MID-ATLANTIC,15
+70,Rhode Island,District of Rhode Island,NORTHEAST/MID-ATLANTIC,3
+71,South Carolina,District of South Carolina,SOUTH,20
+72,South Dakota,District of South Dakota,PLAINS,69
+73,Tennessee,Eastern District,SOUTH,49
+74,Tennessee,Middle District,SOUTH,50
+75,Tennessee,Western District,SOUTH,51
+76,Texas,Eastern District,SOUTH,40
+77,Texas,Northern District,SOUTH,39
+78,Texas,Southern District,SOUTH,41
+79,Texas,Western District,SOUTH,42
+80,Utah,District of Utah,WESTERN INTERIOR,88
+81,Vermont,District of Vermont,NORTHEAST/MID-ATLANTIC,10
+82,Virginia,Eastern District,NORTHEAST/MID-ATLANTIC,22
+83,Virginia,Western District,NORTHEAST/MID-ATLANTIC,23
+84,Washington,Eastern District,PACIFIC,80
+85,Washington,Western District,PACIFIC,81
+86,West Virginia,Northern District,NORTHEAST/MID-ATLANTIC,24
+87,West Virginia,Southern District,NORTHEAST/MID-ATLANTIC,25
+88,Wisconsin,Eastern District,MIDWEST,57
+89,Wisconsin,Western District,MIDWEST,58
+90,Wyoming,District of Wyoming,WESTERN INTERIOR,89

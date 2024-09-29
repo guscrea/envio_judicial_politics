@@ -4,6 +4,13 @@
 
 library(tidyverse)
 library(patchwork)
+library(viridis)
+library(broom) # for tidying regression results
+library(corrplot) # for visial correlation matricies
+library(vtable)
+library(glm2) # for logistic regression
+library(car) # for vif scores
+library(sjPlot) # for reg. forest plots
 
 # Read in Court Listener Data ####
 
@@ -56,7 +63,7 @@ cl_e <- left_join(
   by = "court_id"
   )
 
-# join person data to docket and court data
+# join person data to docket and court data - assigned to
 cl_e <- left_join(
   cl_e,
   cl_people_peo %>%
@@ -74,7 +81,58 @@ cl_e <- left_join(
   by = "assigned_to_id"
   )
 
-# join political affiliation data to docket, court, and person data
+# join person data to docket and court data - referred to
+cl_e <- left_join(
+  cl_e,
+  cl_people_peo %>%
+    rename(
+      "referred_to_id" = "id"
+    ) %>%
+    select(
+      c(
+        referred_to_id,
+        fjc_id,
+        name_first,
+        name_middle,
+        name_last,
+        name_suffix,
+        date_dob,
+        gender
+        ) 
+      ) %>%
+    rename_with(
+      ~ paste0("ref_", .x, recycle0 = TRUE),
+      starts_with("name") | starts_with("date") | starts_with("gender") | starts_with("fjc_id")
+    ),
+  by = "referred_to_id"
+)
+
+check <- cl_e %>%
+  select(
+    id,
+    date_filed,
+    date_terminated,
+    docket_number,
+    docket_number_core,
+    case_name,
+    assigned_to_str,
+    assigned_to_id,
+    fjc_court_id,
+    fjc_id,
+    name_first,
+    name_middle,
+    name_last,
+    gender,
+    ref_fjc_id,
+    ref_name_first,
+    ref_name_middle,
+    ref_name_last,
+    ref_gender
+  )
+
+rm(check)
+
+# join political affiliation to docket, court, and person data - assigned to
 cl_e <- left_join(
   cl_e,
   cl_people_pol %>%
@@ -91,6 +149,105 @@ cl_e <- left_join(
       ),
   by = "assigned_to_id"
   )
+
+# join political affiliation to docket, court, and person data - referred to
+cl_e <- left_join(
+  cl_e,
+  cl_people_pol %>%
+    select(
+      c(
+        id,
+        political_party,
+        source
+      )
+    ) %>%
+    rename(
+      "assigned_to_id" = "id",
+      "source_pa" = "source"
+    ) %>%
+    rename_with(
+      ~ paste0("ref_", .x, recycle0 = TRUE),
+      starts_with("poli") | starts_with("sour")
+    ),
+  by = "assigned_to_id"
+)
+
+# consolidate assigned to and reassigned to columns
+# --> replace assigned to judge info with referred to judge info for purposes of
+# analysis, since the referred to judge is the one who will make decisions on
+# the case
+cl_e <- cl_e %>%
+  ungroup() %>%
+  mutate(
+    name_first = case_when(
+      !is.na(ref_name_first) ~ ref_name_first,
+      TRUE ~ name_first
+    ),
+    name_middle = case_when(
+      !is.na(ref_name_middle) ~ ref_name_middle,
+      TRUE ~ name_middle
+    ),
+    name_last = case_when(
+      !is.na(ref_name_last) ~ ref_name_last,
+      TRUE ~ name_last
+    ),
+    name_suffix = case_when(
+      !is.na(ref_name_suffix) ~ ref_name_suffix,
+      TRUE ~ name_suffix
+    ),
+    date_dob = case_when(
+      !is.na(ref_date_dob) ~ ref_date_dob,
+      TRUE ~ date_dob
+    ),
+    gender = case_when(
+      !is.na(ref_gender) ~ ref_gender,
+      TRUE ~ gender
+    ),
+    political_party = case_when(
+      !is.na(ref_political_party) ~ ref_political_party,
+      TRUE ~ political_party
+    ),
+    source_pa = case_when(
+      !is.na(ref_source_pa) ~ ref_source_pa,
+      TRUE ~ source_pa
+    ),
+    assigned_to_id = case_when(
+      !is.na(referred_to_id) ~ referred_to_id,
+      TRUE ~ assigned_to_id
+    ),
+    fjc_id = case_when(
+      !is.na(ref_fjc_id) ~ ref_fjc_id,
+      TRUE ~ fjc_id
+    )
+  ) %>%
+  # now drop all referred to data, since it has now replaced original assigned 
+  # to data.
+  select(
+    -starts_with("ref_"),
+    -c(referred_to_id, referred_to_str)
+  )
+
+check <- cl_e %>%
+  select(
+    id,
+    date_filed,
+    date_terminated,
+    docket_number,
+    docket_number_core,
+    case_name,
+    assigned_to_str,
+    assigned_to_id,
+    fjc_court_id,
+    fjc_id,
+    name_first,
+    name_middle,
+    name_last,
+    gender,
+    political_party,
+    source_pa
+  )
+
+rm(check)
 
 # get file year; make dist-docket-yr_file number for joining to FJC
 cl_e <- cl_e %>%
@@ -266,13 +423,129 @@ cl_e_clean_j <- cl_e_clean_j %>%
     id,
     join_id,
     case_name,
-    assigned_to_str,
+    #assigned_to_str,
     assigned_to_id,
-    referred_to_str,
-    referred_to_id,
+    fjc_id,
+    #referred_to_str,
+    #referred_to_id,
     name_first:plt_fl
     )
 
+# Read in Bonica and Sen Judicial Ideology Data; join to CL data ####
+
+b_s <- read_csv(
+  "raw data for matching/bonica_sen_fed_judges.csv"
+  ) %>%
+  filter(
+    court.type == "USDC"
+  ) %>%
+  rename(
+    "fjc_id" = "fjc.judge.idno"
+  ) %>%
+  select(
+   fjc_id,
+   judge.first.name,
+   judge.middle.name,
+   judge.last.name,
+   suffix,
+   party.affiliation.of.president,
+   president.name,
+   court.type,
+   court.name,
+   dime.cid,
+   dime.cfscore,
+   imputed.dime.cfscore,
+   jcs.score.dw,
+   jcs.cfscore.cf,
+   pres.dw,
+   pres.dime.cfscore,
+   senscore.dw,
+   senscore.dime.cfscore,
+   state.delegation.dw,
+   state.delegation.dime.cfscore,
+   birth.year,
+   race.or.ethnicity,
+   jd.rank,
+   clerked.for.con,
+   clerked.for.lib
+  ) %>%
+  # check for duplicate rows
+  group_by(
+    fjc_id
+  ) %>%
+  mutate(
+    n = n(),
+    row_n = row_number()
+  ) %>%
+  filter(
+    row_n == 1
+  ) %>%
+  select(
+    -c(n, row_n)
+  ) %>%
+  ungroup()
+
+# join Bonica and Sen data to Court Listener data
+cl_e_clean_j <- left_join(
+  cl_e_clean_j,
+  b_s,
+  by = "fjc_id"
+)
+
+# examine matched data
+check <- cl_e_clean_j %>%
+  select(
+    case_name,
+    assigned_to_id,
+    fjc_id,
+    name_first,
+    name_middle,
+    name_last,
+    name_suffix,
+    judge.first.name,
+    judge.middle.name,
+    judge.last.name,
+    suffix,
+    political_party,
+    party.affiliation.of.president,
+    date_dob,
+    birth.year
+  )
+
+rm(check)
+
+check <- cl_e_clean_j %>%
+  select(
+    case_name,
+    name_first,
+    name_middle,
+    name_last,
+    political_party,
+    party.affiliation.of.president
+  ) %>%
+  mutate(
+    t = case_when(
+      is.na(party.affiliation.of.president) &
+        !is.na(political_party) ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+# for handful of instances where CL data has partisan affiliation and B&S do
+# not, take either R or D from CL and add it to B&S data.
+cl_e_clean_j <- cl_e_clean_j %>%
+  ungroup() %>%
+  mutate(
+    party.affiliation.of.president = case_when(
+      is.na(party.affiliation.of.president) & political_party == "d" ~ "Democratic",
+      TRUE ~ party.affiliation.of.president
+    ),
+    party.affiliation.of.president = case_when(
+      is.na(party.affiliation.of.president) & political_party == "r" ~ "Republican",
+      TRUE ~ party.affiliation.of.president
+    )
+  )
+  
 # Read in FJC data ####
 
 # read in cleaned fjc_idb data; drop BP and IMC cases
@@ -331,32 +604,35 @@ fjc_cl <- left_join(
 )
 
 # clean up join results
-fjc_cl <- fjc_cl %>%
-  select(
-    CIRCUIT,
-    DISTRICT,
-    DOCKET,
-    ORIGIN,
-    FILEDATE,
-    PLT,
-    DEF,
-    case_name,
-    yr_file,
-    yr_term,
-    new,
-    PLT_typ,
-    DEF_typ,
-    PLT_wl,
-    DEF_wl,
-    REGION,
-    join_id,
-    id,
-    assigned_to_str,
-    assigned_to_id,
-    referred_to_str,
-    referred_to_id,
-    name_first:plt_fl.y
-  )
+# fjc_cl <- fjc_cl %>%
+#   select(
+#     CIRCUIT,
+#     DISTRICT,
+#     DOCKET,
+#     ORIGIN,
+#     FILEDATE,
+#     TERMDATE,
+#     PLT,
+#     DEF,
+#     DISP,
+#     JUDGMENT,
+#     case_name,
+#     yr_file,
+#     yr_term,
+#     new,
+#     PLT_typ,
+#     DEF_typ,
+#     PLT_wl,
+#     DEF_wl,
+#     #REGION,
+#     join_id,
+#     id,
+#     assigned_to_str,
+#     assigned_to_id,
+#     referred_to_str,
+#     referred_to_id,
+#     name_first:plt_fl.y
+#   )
 
 # create df with only those observations that have judges
 fjc_cl_j <- fjc_cl %>%
@@ -370,7 +646,7 @@ fjc_cl_simp <- fjc_cl_j %>%
     id, yr_file
   ) %>%
   mutate(
-    data_type = "Final data matched to FJC\n(n = 19,202)"
+    data_type = "Final data matched to FJC\n(n = 19,253)"
   )
 
 
@@ -383,7 +659,7 @@ plot_cl_fjc <- bind_rows(
     ),
   cl_e_clean_j_simp %>%
     mutate(
-      data_type = "Clean data with judge recorded\n(n = 21,900)"
+      data_type = "Clean data with judge recorded\n(n = 21,973)"
     ),
   fjc_cl_simp
 ) %>%
@@ -429,3 +705,324 @@ ggsave(
   height =  200,
   path = "Figures"
 )
+
+# Code outcomes; add districts ######
+
+# read back in coded district crosswalk and format
+dist_crosswalk <- read_csv("crosswalks/district_crosswalk_coded.csv") %>%
+  mutate(
+    FJC_dist_code = str_pad(FJC_dist_code,2,side = "left", pad = 0)
+  ) %>%
+  rename(
+    "DISTRICT" = "FJC_dist_code"
+  ) %>%
+  mutate(
+    DISTRICT = str_pad(DISTRICT,2,side = "left", pad = 0)
+  )
+
+# Code outcomes; add districts 
+fjc_cl_j <- fjc_cl_j %>%
+  ungroup() %>%
+  # first, identify cases that are dismissed, settled, or reach judgement.
+  mutate(
+    jud_or_set = case_when(
+      # note -8 signals missing disposition;it is excluded
+      # see FJC codebook for DISP codes
+      DISP %in% c(2,3,12,13,14,4,5,6,7,8,9,15,16,17,18,19,20) ~ 1,
+      TRUE ~ 0
+    )
+  ) %>%
+  # next, code for plt/def wins and losses
+  # PLT wins include:
+  # - all judgements for plaintiff or both
+  # - all settlements
+  # PLT loses include:
+  # - all judgements for defendant
+  # - all dismissals except settlements
+  # DEF wins include
+  # - all judgements for defendant or both
+  # - all dismissals except settlements
+  # DEF losses include:
+  # - all judgements for plaintiff
+  # - all settlements
+  mutate(
+    PLT_wl = case_when(
+      JUDGMENT %in% c(1,3) | DISP == 13 ~ "w",
+      JUDGMENT == 2 | DISP %in% c(2,3,12,14) ~ "l",
+      TRUE ~ "n"
+    ),
+    DEF_wl = case_when(
+      JUDGMENT %in% c(2,3) | DISP %in% c(2,3,12,14) ~ "w",
+      JUDGMENT %in% c(1) | DISP == 13 ~ "l",
+      TRUE ~ "n"
+    )
+  ) #%>%
+  # finally, join geographic (district, region) info
+  #left_join(
+  #  dist_crosswalk, by = "DISTRICT"
+  #)
+
+# Plot heatmaps ######
+
+# call function for generating graphics input dfs
+source("functions/simple_filter.R")
+
+# call heat map plotting function
+source("functions/heat_map.R")
+
+# set plaintiff types for heat map
+l_typs <- c("BIZ",
+            #"CIVIC",
+            "FED",
+            "IND",
+            "LOC",
+            "NGO",
+            #"NGO_O",
+            #"OTHER",
+            #"TRIBE",
+            "STA"
+)
+
+# Plot heat maps of litigant types - FJC-CL combined data
+plot_fjc_cl_judges <-  plot_PD_combo_heatmap(
+  df = simp_filt(
+    df = "fjc_cl_j",
+    jud = TRUE,
+    disp_drop = NULL,
+    noBP_IMC = TRUE,
+    diag = TRUE
+    ),
+  yr_start = 1980,
+  yr_end = 2022,
+  l_typs = l_typs,
+  title = "Plaintiff and Defendant Type Combinations - FJC Data w/Judges - District Courts 1980-2022",
+  court_level = "D"
+  )
+
+# Plot heat maps of litigant types - FJC data alone
+plot_fjc_raw <- plot_PD_combo_heatmap(
+  df = simp_filt(
+    df = "fjc_e",
+    jud = TRUE,
+    disp_drop = NULL,
+    noBP_IMC = TRUE,
+    diag = TRUE
+  ),
+  yr_start = 1980,
+  yr_end = 2022,
+  l_typs = l_typs,
+  title = "Plaintiff and Defendant Type Combinations - FJC Data w/o Judges - District Courts 1980-2022",
+  court_level = "D"
+  )
+
+# plot plt-def distributions in relation
+plot_fjc_raw / plot_fjc_cl_judges +
+  plot_annotation(tag_levels = 'A')  & 
+  theme(plot.tag = element_text(face = "bold"))
+
+# save combo plot 
+ggsave(
+  "PLT-DEF_matrix_compare.png",
+  units = "mm",
+  width = 180,
+  height =  300,
+  path = "Figures"
+  )
+
+
+
+# Plot geographic (district) distributions ####
+
+# list of state names - lower case
+state_names_lower <- c("Alabama", "Alaska", "American Samoa", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District of Columbia", "Florida", "Georgia", "Guam", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Minor Outlying Islands", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Northern Mariana Islands", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Puerto Rico", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "U.S. Virgin Islands", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming")
+
+state_name_lower_orlist <- paste(state_names_lower, collapse = "|")
+
+# Geographic distribution of cases for all FJC data
+plot_dist_fjc <- simp_filt(
+  df = "fjc_e",
+  jud = FALSE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = TRUE
+  ) %>%
+  #filter(
+  #  PLT_typ %in% c("BIZ","FED","IND","NGO")#"STA","LOC")
+  #) %>%
+  mutate(
+    PLT_typ1 = case_when(
+      PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
+      PLT_typ == "BIZ" ~ "Firms and Trade Associations",
+      PLT_typ == "IND" ~ "Individuals",
+      PLT_typ == "FED" ~ "Federal Government",
+      PLT_typ == "STA" ~ "State Government",
+      PLT_typ == "LOC" ~ "Local Government",
+      PLT_typ == "CIVIC" ~ "Civic Association",
+      PLT_typ == "TRIBE" ~ "Tribe",
+      PLT_typ == "NGO_O" ~ "Non-Environmental Non-Proft",
+      PLT_typ == "PUB_ORG" ~ "Public Organizations",
+      TRUE ~ PLT_typ
+    ),
+    PLT_typ2 = case_when(
+      PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
+      PLT_typ == "BIZ" ~ "Firms and Trade Associations",
+      PLT_typ == "IND" ~ "Individuals",
+      PLT_typ == "FED" ~ "Federal Government",
+      PLT_typ == "STA" ~ "State Government",
+      PLT_typ == "LOC" ~ "Local Government",
+      PLT_typ == "CIVIC" ~ "Others",
+      PLT_typ == "TRIBE" ~ "Others",
+      PLT_typ == "NGO_O" ~ "Others",
+      PLT_typ == "PUB_ORG" ~ "Others",
+      TRUE ~ "Others"
+    )
+  )
+
+plot_dist_fjc <-  plot_dist_fjc %>%
+  mutate(
+    dist_name_flag = case_when(
+      str_detect(Judicial_2,state_name_lower_orlist) == TRUE ~ 1,
+      TRUE ~ 0
+    ),
+    dist_name = case_when(
+      dist_name_flag == 1 ~ Judicial_2,
+      TRUE ~ str_c(Judicial_2,STATE_TERR, sep = " of ")
+    )
+  ) %>%
+  filter(
+    !is.na(dist_name)
+  ) %>%
+  ggplot() +
+  geom_bar(
+    aes(
+      x = reorder(dist_name,dist_name,function(x)-length(x)),
+      group = PLT_typ2,
+      fill = PLT_typ2
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "No. Cases",
+    fill = "Plaitiff Types"
+  ) +
+  #facet_wrap(
+  #  vars(PLT_typ),
+  #  ncol = 2
+  #) +
+  scale_color_viridis_d(option="mako",) +
+  scale_fill_viridis_d(option="mako",) +
+  #guides(colour = "none", fill = "none") +
+  theme_linedraw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Geographic distribution of FJC-CL data with judges
+plot_dist_fjc_cl_j <- simp_filt(
+  df = "fjc_cl_j",
+  jud = FALSE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = TRUE
+  ) %>%
+  #filter(
+  #  PLT_typ %in% c("BIZ","FED","IND","NGO")#"STA","LOC")
+  #) %>%
+  mutate(
+    PLT_typ1 = case_when(
+      PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
+      PLT_typ == "BIZ" ~ "Firms and Trade Associations",
+      PLT_typ == "IND" ~ "Individuals",
+      PLT_typ == "FED" ~ "Federal Government",
+      PLT_typ == "STA" ~ "State Government",
+      PLT_typ == "LOC" ~ "Local Government",
+      PLT_typ == "CIVIC" ~ "Civic Association",
+      PLT_typ == "TRIBE" ~ "Tribe",
+      PLT_typ == "NGO_O" ~ "Non-Environmental Non-Proft",
+      PLT_typ == "PUB_ORG" ~ "Public Organizations",
+      TRUE ~ PLT_typ
+    ),
+    PLT_typ2 = case_when(
+      PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
+      PLT_typ == "BIZ" ~ "Firms and Trade Associations",
+      PLT_typ == "IND" ~ "Individuals",
+      PLT_typ == "FED" ~ "Federal Government",
+      PLT_typ == "STA" ~ "State Government",
+      PLT_typ == "LOC" ~ "Local Government",
+      PLT_typ == "CIVIC" ~ "Others",
+      PLT_typ == "TRIBE" ~ "Others",
+      PLT_typ == "NGO_O" ~ "Others",
+      PLT_typ == "PUB_ORG" ~ "Others",
+      TRUE ~ "Others"
+    )
+  )
+
+plot_dist_fjc_cl_j <-  plot_dist_fjc_cl_j %>%
+  mutate(
+    dist_name_flag = case_when(
+      str_detect(Judicial_2,state_name_lower_orlist) == TRUE ~ 1,
+      TRUE ~ 0
+    ),
+    dist_name = case_when(
+      dist_name_flag == 1 ~ Judicial_2,
+      TRUE ~ str_c(Judicial_2,STATE_TERR, sep = " of ")
+    )
+  ) %>%
+  filter(
+    !is.na(dist_name)
+  ) %>%
+  ggplot() +
+  geom_bar(
+    aes(
+      x = reorder(dist_name,dist_name,function(x)-length(x)),
+      group = PLT_typ2,
+      fill = PLT_typ2
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "No. Cases",
+    fill = "Plaitiff Types"
+  ) +
+  #facet_wrap(
+  #  vars(PLT_typ),
+  #  ncol = 2
+  #) +
+  scale_color_viridis_d(option="mako",) +
+  scale_fill_viridis_d(option="mako",) +
+  #guides(colour = "none", fill = "none") +
+  theme_linedraw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# plot plt-def distributions in relation
+plot_dist_fjc / plot_dist_fjc_cl_j +
+  plot_annotation(tag_levels = 'A')  & 
+  theme(plot.tag = element_text(face = "bold"))
+
+# save combo plot 
+ggsave(
+  "District_dist_compare.png",
+  units = "mm",
+  width = 400,
+  height =  300,
+  path = "Figures"
+  )
+
+# Run regressions ####
+
+
+# call win-loss regression
+source("functions/win_loss_logit_reg.R")
+
+# regression of plaintiff wins and losses
+# --> excluding BP and IMC
+# --> testing for association with party of president (partisan effect)
+win_los_reg(
+  df = "fjc_cl_j",
+  jud = TRUE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = FALSE,
+  yr_i = 1980,
+  yr_f = 2020,
+  party_or_admin = "PARTY",
+  judges = TRUE
+  )
