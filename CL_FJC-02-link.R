@@ -354,7 +354,7 @@ cl_e_clean_j <- cl_e_clean %>%
     !is.na(assigned_to_id)
   )
 
-# --> 21,900
+# --> 21,973
 # --> So we lose ~25% for our original observations (7,274). That's a lot!
 # Certainly need to investigate if those cases for which we do not observe the
 # the judge are systematically different from those where we do.
@@ -365,7 +365,7 @@ cl_e_clean_j_simp <- cl_e_clean_j %>%
     id, yr_file
   ) %>%
   mutate(
-    data_type = "Observations with judge recorded\n(n = 21,900)"
+    data_type = "Observations with judge recorded\n(n = 21,973)"
   )
 
 # plot distribution of years for cleaned data and cleaned data with judges, for
@@ -603,36 +603,6 @@ fjc_cl <- left_join(
   by = "join_id"
 )
 
-# clean up join results
-# fjc_cl <- fjc_cl %>%
-#   select(
-#     CIRCUIT,
-#     DISTRICT,
-#     DOCKET,
-#     ORIGIN,
-#     FILEDATE,
-#     TERMDATE,
-#     PLT,
-#     DEF,
-#     DISP,
-#     JUDGMENT,
-#     case_name,
-#     yr_file,
-#     yr_term,
-#     new,
-#     PLT_typ,
-#     DEF_typ,
-#     PLT_wl,
-#     DEF_wl,
-#     #REGION,
-#     join_id,
-#     id,
-#     assigned_to_str,
-#     assigned_to_id,
-#     referred_to_str,
-#     referred_to_id,
-#     name_first:plt_fl.y
-#   )
 
 # create df with only those observations that have judges
 fjc_cl_j <- fjc_cl %>%
@@ -646,7 +616,33 @@ fjc_cl_simp <- fjc_cl_j %>%
     id, yr_file
   ) %>%
   mutate(
-    data_type = "Final data matched to FJC\n(n = 19,253)"
+    data_type = "Data matched to FJC\n(n = 19,253)"
+  )
+
+
+# call function for generating simple input dfs
+source("functions/simple_filter.R")
+
+# make simple df of joined-cl-fjc data TO BE USED IN REGRESSIONS
+fjc_cl_j_reg_simp <- simp_filt(
+  df = "fjc_cl_j",
+  jud = TRUE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = FALSE
+  ) %>%
+  filter(
+    !is.na(PLT_typ),
+    !is.na(REGION),
+    !is.na(yr_file),
+    !is.na(fjc_id),
+    !is.na(state.delegation.dime.cfscore)
+  ) %>%
+  select(
+    id, yr_file
+  ) %>%
+  mutate(
+    data_type = "Final data used for analysis\n(n = 13,341)"
   )
 
 
@@ -661,7 +657,8 @@ plot_cl_fjc <- bind_rows(
     mutate(
       data_type = "Clean data with judge recorded\n(n = 21,973)"
     ),
-  fjc_cl_simp
+  fjc_cl_simp,
+  fjc_cl_j_reg_simp
 ) %>%
   ggplot(
     aes(
@@ -846,9 +843,6 @@ plot_dist_fjc <- simp_filt(
   noBP_IMC = TRUE,
   diag = TRUE
   ) %>%
-  #filter(
-  #  PLT_typ %in% c("BIZ","FED","IND","NGO")#"STA","LOC")
-  #) %>%
   mutate(
     PLT_typ1 = case_when(
       PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
@@ -915,17 +909,21 @@ plot_dist_fjc <-  plot_dist_fjc %>%
   theme_linedraw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-# Geographic distribution of FJC-CL data with judges
+# Geographic distribution of FJC-CL data with judges - USED FOR ANALYSIS
 plot_dist_fjc_cl_j <- simp_filt(
   df = "fjc_cl_j",
-  jud = FALSE,
+  jud = TRUE,
   disp_drop = NULL,
   noBP_IMC = TRUE,
-  diag = TRUE
+  diag = FALSE
   ) %>%
-  #filter(
-  #  PLT_typ %in% c("BIZ","FED","IND","NGO")#"STA","LOC")
-  #) %>%
+  filter(
+    !is.na(PLT_typ),
+    !is.na(REGION),
+    !is.na(yr_file),
+    !is.na(fjc_id),
+    !is.na(state.delegation.dime.cfscore)
+  ) %>%
   mutate(
     PLT_typ1 = case_when(
       PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
@@ -1016,13 +1014,14 @@ source("functions/win_loss_logit_reg.R")
 # --> excluding BP and IMC
 # --> testing for association with party of president (partisan effect)
 
-# note: judicial ideology varaible (judge_pv) can take on one of the following 
+# note: judicial ideology variable (judge_pv) can take on one of the following 
 # values. See Bonica and Sen (2021), Journal of Economic Perspectives, and
 # associated papers referenced in that overview paper.
 
-# --> "prez_party":
-# --> "dime":
-# --> "jcs_dw":
+# --> "prez_party": the political party of the appointing president
+# --> "dime": the DIME score of the judge (based on political contributions;
+#.     imputed where missing.)
+# --> "jcs_dw": Judicial Common Space score based on D-W NOMINATE 
 # --> "jcs_cf":
 # --> "prez_dw":
 # --> "prez_dime":
@@ -1032,7 +1031,6 @@ source("functions/win_loss_logit_reg.R")
 # --> "del_dime"
 
 # loop through each judge_pv var with win_loss_reg 
-
 judge_pv_list <- c("prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw",
                    "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime")
 
@@ -1048,17 +1046,4 @@ lapply(
   yr_f = 2020,
   party_or_admin = "PARTY",
   judges = TRUE
-  )
-
-win_los_reg(
-  df = "fjc_cl_j",
-  jud = TRUE,
-  disp_drop = NULL,
-  noBP_IMC = TRUE,
-  diag = FALSE,
-  yr_i = 1980,
-  yr_f = 2020,
-  party_or_admin = "PARTY",
-  judges = TRUE,
-  judge_pv = "prez_party"
   )
