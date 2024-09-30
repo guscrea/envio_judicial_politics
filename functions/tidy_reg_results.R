@@ -5,10 +5,12 @@
 # m_name = readable name of model
 
 # for testing
-#m = log_wl_model
-#m_name = "Full Model"
+# m = log_wl_model
+# m_name = "Full Model"
+# judges = TRUE
+# judge_pv = "del_dime"
 
-tidy_results <- function(m, m_name,par){
+tidy_results <- function(m, m_name,judges,judge_pv = NULL){
   df <- tidy(m) %>%
     mutate(
       # clean up variable names
@@ -37,7 +39,16 @@ tidy_results <- function(m, m_name,par){
         term == "prez_nameBiden" ~ "Biden",
         term == "genderm" ~ "Male",
         term == "party.affiliation.of.presidentDemocratic" ~ "Democratic",
-        term == "party.affiliation.of.presidentRepublican" ~ "Republican"
+        term == "party.affiliation.of.presidentRepublican" ~ "Republican",
+        term == "imputed.dime.cfscore" ~ "DIME Score (CF)",
+        term == "jcs.score.dw" ~ "JCS Score (DW)",
+        term == "jcs.cfscore.cf" ~ "JCS Score (CF)",
+        term == "pres.dw" ~ "President Score (DW)",
+        term == "pres.dime.cfscore" ~ "President Score (CF)",
+        term == "senscore.dw" ~ "Senate Del. Score (DW)",
+        term == "senscore.dime.cfscore" ~ "Senate Del. Score (CF)",
+        term == "state.delegation.dw" ~ "State Del. Score (DW)",
+        term == "state.delegation.dime.cfscore" ~ "State Del. Score (CF)",
       ),
       # round estimates, std errors to third, fourth decimal
       estimate_r = round(estimate, 4),
@@ -154,14 +165,28 @@ tidy_results <- function(m, m_name,par){
     )
   
   # judge party header
-  jparty_row <- df %>%
-    filter(
-      row_number() == 1
-    ) %>%
-    mutate(
-      var_name_pretty = "Appointing President's Party (Democratic = ref)",
-      val = ""
-    )
+  if(judges == TRUE & judge_pv == "prez_party"){
+    jparty_row <- df %>%
+      filter(
+        row_number() == 1
+      ) %>%
+      mutate(
+        var_name_pretty = "Appointing President's Party (Democratic = ref)",
+        val = ""
+      )
+  } else if (judges == TRUE & judge_pv != "prez_party"){
+    jparty_row <- df %>%
+      filter(
+        row_number() == 1
+      ) %>%
+      mutate(
+        var_name_pretty = "Judicial Ideology",
+        val = ""
+      )
+  } else{
+    .
+  }
+  
   
   # Intercept header
   int_row <- df %>%
@@ -225,7 +250,7 @@ tidy_results <- function(m, m_name,par){
     )
   
   #plaintiff type chunk
-  p_typ_list <- c("Federal|Firms|Individuals|Local|Other|State")
+  p_typ_list <- c("Federal|Firms|Individuals|Local|Other|State Gov")
   p_typ_chunk <- df %>%
     filter(
       str_detect(var_name_pretty, p_typ_list)
@@ -245,12 +270,20 @@ tidy_results <- function(m, m_name,par){
       str_detect(var_name_pretty, sex_list)
     )
   
-  #judge party chunk
-  jparty_list <- c("Democratic|Republican")
-  jparty_chunk <- df %>%
-    filter(
-      str_detect(var_name_pretty, jparty_list)
-    )
+  #judge ideology chunk
+  if(judges == TRUE & judge_pv == "prez_party"){
+    jparty_list <- c("Democratic|Republican")
+    jparty_chunk <- df %>%
+      filter(
+        str_detect(var_name_pretty, jparty_list)
+      )
+  } else if(judges == TRUE & judge_pv != "prez_party"){
+    jparty_list <- c("DIME Score|JCS Score|President Score|Senate Del|State Del")
+    jparty_chunk <- df %>%
+      filter(
+        str_detect(var_name_pretty, jparty_list)
+      )
+  }
     
   # intercept chunk
   int_chunk <- df %>%
@@ -258,7 +291,6 @@ tidy_results <- function(m, m_name,par){
       str_detect(var_name_pretty, "Intercept")
     )
     
-  
   # assemble chunks with headers
   if(party_or_admin > 0){
     df <- bind_rows(
@@ -286,7 +318,9 @@ tidy_results <- function(m, m_name,par){
       p_typ_chunk,
       reg_row,
       region_chunk,
+      sex_row,
       sex_chunk,
+      jparty_row,
       jparty_chunk,
       int_row,
       int_chunk,

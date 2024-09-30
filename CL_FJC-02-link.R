@@ -1015,7 +1015,30 @@ source("functions/win_loss_logit_reg.R")
 # regression of plaintiff wins and losses
 # --> excluding BP and IMC
 # --> testing for association with party of president (partisan effect)
-win_los_reg(
+
+# note: judicial ideology varaible (judge_pv) can take on one of the following 
+# values. See Bonica and Sen (2021), Journal of Economic Perspectives, and
+# associated papers referenced in that overview paper.
+
+# --> "prez_party":
+# --> "dime":
+# --> "jcs_dw":
+# --> "jcs_cf":
+# --> "prez_dw":
+# --> "prez_dime":
+# --> "sen_dw":
+# --> "sen_dime":
+# --> "del_dw":
+# --> "del_dime"
+
+# loop through each judge_pv var with win_loss_reg 
+
+judge_pv_list <- c("prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw",
+                   "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime")
+
+lapply(
+  judge_pv_list,
+  win_los_reg,
   df = "fjc_cl_j",
   jud = TRUE,
   disp_drop = NULL,
@@ -1025,4 +1048,17 @@ win_los_reg(
   yr_f = 2020,
   party_or_admin = "PARTY",
   judges = TRUE
+  )
+
+win_los_reg(
+  df = "fjc_cl_j",
+  jud = TRUE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = FALSE,
+  yr_i = 1980,
+  yr_f = 2020,
+  party_or_admin = "PARTY",
+  judges = TRUE,
+  judge_pv = "prez_party"
   )

@@ -1,20 +1,26 @@
 # Function for running win-loss regressions, collecting and plotting results
 
 # inputs
+# judge_pv: variable specifying which indicator of judge partisanship/ideology
+#           will be modeled. Can be "prez_party", "dime", "jcs_dw", "jcs_cf",
+#           "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime"
+#           See Bonica and Sen (2013[?]) for details.
+
 
 # for testing
- # df = "fjc_cl_j"
- # jud = TRUE
- # disp_drop = NULL
- # noBP_IMC = TRUE
- # diag = FALSE
- # yr_i = 1980
- # yr_f = 2020
- # party_or_admin = "PARTY"
- # judges = TRUE
- # name_append = NULL
- # recode_set = NULL
- # recode_mixed = NULL
+# df = "fjc_cl_j"
+# jud = TRUE
+# disp_drop = NULL
+# noBP_IMC = TRUE
+# diag = FALSE
+# yr_i = 1980
+# yr_f = 2020
+# party_or_admin = "PARTY"
+# judges = TRUE
+# judge_pv = "del_dime"
+# name_append = NULL
+# recode_set = NULL
+# recode_mixed = NULL
 
 win_los_reg <- function(
     df,
@@ -26,11 +32,11 @@ win_los_reg <- function(
     yr_f,
     party_or_admin,
     judges,
+    judge_pv = NULL,
     name_append = NULL,
     recode_set = NULL,
     recode_mixed = NULL
     ){
-  
   
   # build save_name base text based on input parameters ####
   save_name = "_"
@@ -85,11 +91,11 @@ win_los_reg <- function(
   
   # judge characteristics in or not
   if(judges == TRUE) {
-    save_name = str_c(save_name,"Judges")
-  } else if (party_or_admin != TRUE) {
-    save_name = str_c(save_name,"noJudges")
+    save_name = str_c(save_name,"_judge_",judge_pv)
+  } else if (judges != TRUE) {
+    save_name = str_c(save_name,"_nojudge")
   } else {
-    stop(cat('Cannot tell if the model should include or exclude judge characteristics. Did you set judges to TRUE or FALSE?'))
+    stop(cat('Cannot tell if the model should include or exclude judge characteristics. Did you set judges to TRUE or FALSE and set judge_pv to an appropriate value (e.g. "prez_aprty"?)'))
   }
   
   # add name append
@@ -261,7 +267,7 @@ win_los_reg <- function(
         mutate(
           .,
           gender = as.factor(gender),
-          party.affiliation.of.president = as.factor(party.affiliation.of.president)
+          party.affiliation.of.president = as.factor(party.affiliation.of.president),
         )
       } else {
         .
@@ -281,7 +287,16 @@ win_los_reg <- function(
       "PLT_typ2",
       "REGION",
       "gender",
-      "party.affiliation.of.president")
+      "party.affiliation.of.president",
+      "imputed.dime.cfscore",
+      "jcs.score.dw",
+      "jcs.cfscore.cf",
+      "pres.dw",
+      "pres.dime.cfscore",
+      "senscore.dw",
+      "senscore.dime.cfscore",
+      "state.delegation.dw",
+      "state.delegation.dime.cfscore")
     } else {
       cor_vars <- c(
       "PLT_wl",
@@ -464,82 +479,611 @@ win_los_reg <- function(
   # president (presidential effect).
   
   if(party_or_admin == "PARTY" & judges == TRUE){
+    
     # fit model with all plaintiff types
-    log_wl_model <- glm(
-      PLT_wl ~ dplyr::lead(Prez, n = 0) +
-        #prez_name + 
-        yr_file +
-        PLT_typ2 +
-        REGION +
-        gender +
-        party.affiliation.of.president,
-      data = reg_df,
-      family = 'binomial'
+    if(judge_pv == "prez_party"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          party.affiliation.of.president,
+        data = reg_df,
+        family = 'binomial'
+        )
+    } else if(judge_pv == "dime"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          imputed.dime.cfscore,
+        data = reg_df,
+        family = 'binomial'
       )
+    } else if(judge_pv == "jcs_dw"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          jcs.score.dw,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else if(judge_pv == "jcs_cf"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          jcs.cfscore.cf,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dw"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          pres.dw,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dime"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          pres.dime.cfscore,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dw"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dw,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dime"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dime.cfscore,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dw"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dw,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dime"){
+      log_wl_model <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dime.cfscore,
+        data = reg_df,
+        family = 'binomial'
+      )
+    } else {
+      stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+    }
     
     # look at VIF scores (for manual insepction)
     vif(log_wl_model)
     
     # collect tidy results
-    log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model")
+    log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model", judges = judges, judge_pv = judge_pv)
     
     # fit model with only federal plaintiffs
-    log_wl_model_fed <- glm(
-      PLT_wl ~ dplyr::lead(Prez, n = 0) +
-        #prez_name + 
-        yr_file +
-        #PLT_typ2 +
-        REGION +
-        gender +
-        party.affiliation.of.president,
-      data = reg_df %>%
-        filter(
-          PLT_typ == "FED"
-        ),
-      family = 'binomial'
+    if(judge_pv == "prez_party"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          party.affiliation.of.president,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
       )
+    } else if(judge_pv == "dime"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          imputed.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "jcs_dw"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          jcs.score.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "jcs_cf"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          jcs.cfscore.cf,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dw"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          pres.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dime"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          pres.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dw"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dime"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dw"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dime"){
+      log_wl_model_fed <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "FED"
+          ),
+        family = 'binomial'
+      )
+    } else {
+      stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+    }
     
     # collect tidy results
-    log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs")
+    log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs", judges = judges, judge_pv = judge_pv)
     
     # fit model with only ENGO plaintiffs
-    log_wl_model_NGO <- glm(
-      PLT_wl ~ dplyr::lead(Prez, n = 0) +
-        #prez_name + 
-        yr_file +
-        #PLT_typ2 +
-        REGION +
-        gender +
-        party.affiliation.of.president,
-      data = reg_df %>%
-        filter(
-          PLT_typ == "NGO"
-        ),
-      family = 'binomial'
+    if(judge_pv == "prez_party"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          party.affiliation.of.president,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
       )
+    } else if(judge_pv == "dime"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          imputed.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "jcs_dw"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          jcs.score.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "jcs_cf"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          jcs.cfscore.cf,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dw"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          pres.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dime"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          pres.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dw"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dime"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dw"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dime"){
+      log_wl_model_NGO <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "NGO"
+          ),
+        family = 'binomial'
+      )
+    } else {
+      stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+    }
     
     # collect tidy results
-    log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs")
-    
+    log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs", judges = judges, judge_pv = judge_pv)
     
     # fit model with only BIZ plaintiffs
-    log_wl_model_BIZ <- glm(
-      PLT_wl ~ dplyr::lead(Prez, n = 0) +
-        #prez_name + 
-        yr_file +
-        #PLT_typ2 +
-        REGION +
-        gender +
-        party.affiliation.of.president,
-      data = reg_df %>%
-        filter(
-          PLT_typ == "BIZ"
-        ),,
-      family = 'binomial'
+    if(judge_pv == "prez_party"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          party.affiliation.of.president,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
       )
+    } else if(judge_pv == "dime"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          imputed.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "jcs_dw"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          jcs.score.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "jcs_cf"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          jcs.cfscore.cf,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dw"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          pres.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "prez_dime"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          pres.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dw"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "sen_dime"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          senscore.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dw"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dw,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else if(judge_pv == "del_dime"){
+      log_wl_model_BIZ <- glm(
+        PLT_wl ~ dplyr::lead(Prez, n = 0) +
+          #prez_name + 
+          yr_file +
+          #PLT_typ2 +
+          REGION +
+          gender +
+          state.delegation.dime.cfscore,
+        data = reg_df %>%
+          filter(
+            PLT_typ == "BIZ"
+          ),
+        family = 'binomial'
+      )
+    } else {
+      stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+    }
     
     # collect tidy results
-    log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs")
+    log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs", judges = judges, judge_pv = judge_pv)
     
     # build axis labels for plot figure based on model results
     # reverse order of list
@@ -565,6 +1109,33 @@ win_los_reg <- function(
       ) %>%
       str_replace_all(
         "Genderm", "Male"
+      ) %>%
+      str_replace_all(
+        "Imputed.dime.cfscore", "DIME Score (CF)"
+      ) %>%
+      str_replace_all(
+        "Jcs.score.dw", "JCS Score (DW)"
+      ) %>%
+      str_replace_all(
+        "Jcs.cfscore.cf", "JCS Score (CF)"
+      ) %>%
+      str_replace_all(
+        "Pres.dw", "President Score (DW)"
+      ) %>%
+      str_replace_all(
+        "Pres.dime.cfscore", "President Score (CF)"
+      ) %>%
+      str_replace_all(
+        "Senscore.dw", "Senate Del. Score (DW)"
+      ) %>%
+      str_replace_all(
+        "Senscore.dime.cfscore", "Senate Del. Score (CF)"
+      ) %>%
+      str_replace_all(
+        "State.delegation.dw", "State Del. Score (DW)"
+      ) %>%
+      str_replace_all(
+        "State.delegation.dime.cfscore", "State Del. Score (CF)"
       )
     
     # plot model results with sjPlot
@@ -598,82 +1169,611 @@ win_los_reg <- function(
       )
     
     } else if (party_or_admin == "ADMIN" & judges == TRUE) {
-      # fit model with all plaintiff types
-      log_wl_model <- glm(
-        PLT_wl ~ #dplyr::lead(Prez, n = 0) +
-          prez_name + 
-          #yr_file +
-          PLT_typ2 +
-          REGION +
-          gender +
-          party.affiliation.of.president,
-        data = reg_df,
-        family = 'binomial'
-        )
       
-      # look at VIF scores (for manual inspection)
+      # fit model with all plaintiff types
+      if(judge_pv == "prez_party"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            party.affiliation.of.president,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "dime"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            imputed.dime.cfscore,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_dw"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            jcs.score.dw,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_cf"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            jcs.cfscore.cf,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dw"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            pres.dw,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dime"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            pres.dime.cfscore,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dw"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dw,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dime"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dime.cfscore,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dw"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dw,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dime"){
+        log_wl_model <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dime.cfscore,
+          data = reg_df,
+          family = 'binomial'
+        )
+      } else {
+        stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+      }
+      
+      # look at VIF scores (for manual insepction)
       vif(log_wl_model)
       
       # collect tidy results
-      log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model")
+      log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model", judges = judges, judge_pv = judge_pv)
       
       # fit model with only federal plaintiffs
-      log_wl_model_fed <- glm(
-        PLT_wl ~ #dplyr::lead(Prez, n = 0) +
-          prez_name + 
-          #yr_file +
-          #PLT_typ2 +
-          REGION +
-          gender +
-          party.affiliation.of.president,
-        data = reg_df %>%
-          filter(
-            PLT_typ == "FED"
-          ),
-        family = 'binomial'
+      if(judge_pv == "prez_party"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            party.affiliation.of.president,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
         )
+      } else if(judge_pv == "dime"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            imputed.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_dw"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            jcs.score.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_cf"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            jcs.cfscore.cf,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dw"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            pres.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dime"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            pres.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dw"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dime"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dw"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dime"){
+        log_wl_model_fed <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "FED"
+            ),
+          family = 'binomial'
+        )
+      } else {
+        stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+      }
       
       # collect tidy results
-      log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs")
+      log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       # fit model with only ENGO plaintiffs
-      log_wl_model_NGO <- glm(
-        PLT_wl ~ #dplyr::lead(Prez, n = 0) +
-          prez_name + 
-          #yr_file +
-          #PLT_typ2 +
-          REGION +
-          gender +
-          party.affiliation.of.president,
-        data = reg_df %>%
-          filter(
-            PLT_typ == "NGO"
-          ),
-        family = 'binomial'
+      if(judge_pv == "prez_party"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            party.affiliation.of.president,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
         )
+      } else if(judge_pv == "dime"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            imputed.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_dw"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            jcs.score.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_cf"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            jcs.cfscore.cf,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dw"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            pres.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dime"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            pres.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dw"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dime"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dw"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dime"){
+        log_wl_model_NGO <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "NGO"
+            ),
+          family = 'binomial'
+        )
+      } else {
+        stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+      }
       
       # collect tidy results
-      log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs")
-      
+      log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       # fit model with only BIZ plaintiffs
-      log_wl_model_BIZ <- glm(
-        PLT_wl ~ #dplyr::lead(Prez, n = 0) +
-          prez_name + 
-          #yr_file +
-          #PLT_typ2 +
-          REGION +
-          gender +
-          party.affiliation.of.president,
-        data = reg_df %>%
-          filter(
-            PLT_typ == "BIZ"
-          ),,
-        family = 'binomial'
+      if(judge_pv == "prez_party"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            party.affiliation.of.president,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
         )
+      } else if(judge_pv == "dime"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            imputed.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_dw"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            jcs.score.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "jcs_cf"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            jcs.cfscore.cf,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dw"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            pres.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "prez_dime"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            pres.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dw"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "sen_dime"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            senscore.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dw"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dw,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else if(judge_pv == "del_dime"){
+        log_wl_model_BIZ <- glm(
+          PLT_wl ~ #dplyr::lead(Prez, n = 0) +
+            prez_name + 
+            yr_file +
+            #PLT_typ2 +
+            REGION +
+            gender +
+            state.delegation.dime.cfscore,
+          data = reg_df %>%
+            filter(
+              PLT_typ == "BIZ"
+            ),
+          family = 'binomial'
+        )
+      } else {
+        stop(cat('Cannot tell which inidcator of judicial ideology to model. Did you set judge_pv to an appropriate value? Options include "prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw", "prez_dime", "sen_dw", "sen_dime", "del_dw", and "del_dime".'))
+      }
       
       # collect tidy results
-      log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs")
+      log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       # build axis labels for plot figure based on model results
       # reverse order of list
@@ -696,8 +1796,34 @@ win_los_reg <- function(
         ) %>%
         str_replace_all(
           "Genderm", "Male"
+        ) %>%
+        str_replace_all(
+          "Imputed.dime.cfscore", "DIME Score (CF)"
+        ) %>%
+        str_replace_all(
+          "Jcs.score.dw", "JCS Score (DW)"
+        ) %>%
+        str_replace_all(
+          "Jcs.cfscore.cf", "JCS Score (CF)"
+        ) %>%
+        str_replace_all(
+          "Pres.dw", "President Score (DW)"
+        ) %>%
+        str_replace_all(
+          "Pres.dime.cfscore", "President Score (CF)"
+        ) %>%
+        str_replace_all(
+          "Senscore.dw", "Senate Del. Score (DW)"
+        ) %>%
+        str_replace_all(
+          "Senscore.dime.cfscore", "Senate Del. Score (CF)"
+        ) %>%
+        str_replace_all(
+          "State.delegation.dw", "State Del. Score (DW)"
+        ) %>%
+        str_replace_all(
+          "State.delegation.dime.cfscore", "State Del. Score (CF)"
         )
-      
       
       # plot model results with sjPlot
       all_models <- plot_models(
@@ -744,7 +1870,7 @@ win_los_reg <- function(
       vif(log_wl_model)
       
       # collect tidy results
-      log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model")
+      log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model", judges = judges, judge_pv = judge_pv)
       
       # fit model with only federal plaintiffs
       log_wl_model_fed <- glm(
@@ -761,7 +1887,7 @@ win_los_reg <- function(
       )
       
       # collect tidy results
-      log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs")
+      log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       # fit model with only ENGO plaintiffs
       log_wl_model_NGO <- glm(
@@ -778,7 +1904,7 @@ win_los_reg <- function(
       )
       
       # collect tidy results
-      log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs")
+      log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       
       # fit model with only BIZ plaintiffs
@@ -796,7 +1922,7 @@ win_los_reg <- function(
       )
       
       # collect tidy results
-      log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs")
+      log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       # build axis labels for plot figure based on model results
       # reverse order of list
@@ -867,7 +1993,7 @@ win_los_reg <- function(
       vif(log_wl_model)
       
       # collect tidy results
-      log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model")
+      log_wl_model_tidy <- tidy_results(log_wl_model,"Full Model", judges = judges, judge_pv = judge_pv)
       
       # fit model with only federal plaintiffs
       log_wl_model_fed <- glm(
@@ -884,7 +2010,7 @@ win_los_reg <- function(
       )
       
       # collect tidy results
-      log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs")
+      log_wl_model_fed_tidy <- tidy_results(log_wl_model_fed, "Federal Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       # fit model with only ENGO plaintiffs
       log_wl_model_NGO <- glm(
@@ -901,7 +2027,7 @@ win_los_reg <- function(
       )
       
       # collect tidy results
-      log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs")
+      log_wl_model_NGO_tidy <- tidy_results(log_wl_model_NGO, "ENGO Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       
       # fit model with only BIZ plaintiffs
@@ -919,7 +2045,7 @@ win_los_reg <- function(
       )
       
       # collect tidy results
-      log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs")
+      log_wl_model_BIZ_tidy <- tidy_results(log_wl_model_BIZ, "Firm Plaintiffs", judges = judges, judge_pv = judge_pv)
       
       # build axis labels for plot figure based on model results
       # reverse order of list
