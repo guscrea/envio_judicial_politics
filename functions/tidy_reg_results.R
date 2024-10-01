@@ -38,6 +38,8 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
         term == "prez_nameTrump" ~ "Trump",
         term == "prez_nameBiden" ~ "Biden",
         term == "genderm" ~ "Male",
+        term == "green_genGG" ~ "Green Generation (1935-1950)",
+        term == "green_genPG" ~ "Pre-Green Generation (Pre-1935)",
         term == "party.affiliation.of.presidentDemocratic" ~ "Democratic",
         term == "party.affiliation.of.presidentRepublican" ~ "Republican",
         term == "imputed.dime.cfscore" ~ "DIME Score (CF)",
@@ -164,6 +166,16 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       val = ""
     )
   
+  # judge generation header
+  gen_row <- df %>%
+    filter(
+      row_number() == 1
+    ) %>%
+    mutate(
+      var_name_pretty = "Generation (Post-Green/Post-1950 = ref)",
+      val = ""
+    )
+  
   # judge party header
   if(judges == TRUE & judge_pv == "prez_party"){
     jparty_row <- df %>%
@@ -270,6 +282,13 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       str_detect(var_name_pretty, sex_list)
     )
   
+  #gen chunk
+  gen_list <- c("Green")
+  gen_chunk <- df %>%
+    filter(
+      str_detect(var_name_pretty, gen_list)
+    )
+  
   #judge ideology chunk
   if(judges == TRUE & judge_pv == "prez_party"){
     jparty_list <- c("Democratic|Republican")
@@ -304,6 +323,8 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       region_chunk,
       sex_row,
       sex_chunk,
+      gen_row,
+      gen_chunk,
       jparty_row,
       jparty_chunk,
       int_row,
@@ -320,6 +341,8 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       region_chunk,
       sex_row,
       sex_chunk,
+      gen_row,
+      gen_chunk,
       jparty_row,
       jparty_chunk,
       int_row,

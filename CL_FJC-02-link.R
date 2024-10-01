@@ -11,6 +11,7 @@ library(vtable)
 library(glm2) # for logistic regression
 library(car) # for vif scores
 library(sjPlot) # for reg. forest plots
+library(lubridate) 
 
 # Read in Court Listener Data ####
 
@@ -703,7 +704,7 @@ ggsave(
   path = "Figures"
 )
 
-# Code outcomes; add districts ######
+# Code outcomes; add districts; build age and generation vars ######
 
 # read back in coded district crosswalk and format
 dist_crosswalk <- read_csv("crosswalks/district_crosswalk_coded.csv") %>%
@@ -717,15 +718,17 @@ dist_crosswalk <- read_csv("crosswalks/district_crosswalk_coded.csv") %>%
     DISTRICT = str_pad(DISTRICT,2,side = "left", pad = 0)
   )
 
-# Code outcomes; add districts 
+# Code outcomes; add districts; create green generation indicator and age vars
 fjc_cl_j <- fjc_cl_j %>%
   ungroup() %>%
-  # first, identify cases that are dismissed, settled, or reach judgement.
   mutate(
     jud_or_set = case_when(
+      # call "in" for analysis cases that are dismissed, settled, or reach judgement.
       # note -8 signals missing disposition;it is excluded
       # see FJC codebook for DISP codes
-      DISP %in% c(2,3,12,13,14,4,5,6,7,8,9,15,16,17,18,19,20) ~ 1,
+      #DISP %in% c(2,3,12,13,14,4,5,6,7,8,9,15,16,17,18,19,20) ~ 1,
+      # exclude dismissals and settlements from analysis (since judges have less role in such cases)
+      DISP %in% c(2,3,4,5,6,7,8,9,15,16,17,18,19,20) ~ 1,
       TRUE ~ 0
     )
   ) %>%
@@ -753,11 +756,21 @@ fjc_cl_j <- fjc_cl_j %>%
       JUDGMENT %in% c(1) | DISP == 13 ~ "l",
       TRUE ~ "n"
     )
-  ) #%>%
-  # finally, join geographic (district, region) info
-  #left_join(
-  #  dist_crosswalk, by = "DISTRICT"
-  #)
+  ) %>%
+  # green generation: pree green, green, after green
+  mutate(
+    date_dob = ymd(date_dob),
+    TERMDATE = ymd(TERMDATE),
+    age_at_term = as.numeric((TERMDATE-date_dob)/365.25),
+    green_gen = case_when(
+      date_dob < ymd("1935-01-01") ~ "PG",
+      date_dob >= ymd("1935-01-01") & date_dob <= ymd("1950-12-31") ~ "GG",
+      date_dob > ymd("1950-12-31") ~ "AG"
+    ),
+    green_gen = as.factor(green_gen)
+  )
+
+fjc_cl_j$age_at_term[1]
 
 # Plot heatmaps ######
 
@@ -788,11 +801,17 @@ plot_fjc_cl_judges <-  plot_PD_combo_heatmap(
     disp_drop = NULL,
     noBP_IMC = TRUE,
     diag = TRUE
-    ),
+    ) %>% filter(
+      !is.na(PLT_typ),
+      !is.na(REGION),
+      !is.na(yr_file),
+      !is.na(fjc_id),
+      !is.na(state.delegation.dime.cfscore)
+    ) ,
   yr_start = 1980,
   yr_end = 2022,
   l_typs = l_typs,
-  title = "Plaintiff and Defendant Type Combinations - FJC Data w/Judges - District Courts 1980-2022",
+  title = "Plaintiff and Defendant Type Combinations - Data for Analysis (with intra-type cases) - District Courts 1980-2022",
   court_level = "D"
   )
 
@@ -808,7 +827,7 @@ plot_fjc_raw <- plot_PD_combo_heatmap(
   yr_start = 1980,
   yr_end = 2022,
   l_typs = l_typs,
-  title = "Plaintiff and Defendant Type Combinations - FJC Data w/o Judges - District Courts 1980-2022",
+  title = "Plaintiff and Defendant Type Combinations - FJC Data Alone - District Courts 1980-2022",
   court_level = "D"
   )
 

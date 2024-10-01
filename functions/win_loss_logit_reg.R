@@ -8,19 +8,19 @@
 
 
 # for testing
-# df = "fjc_cl_j"
-# jud = TRUE
-# disp_drop = NULL
-# noBP_IMC = TRUE
-# diag = FALSE
-# yr_i = 1980
-# yr_f = 2020
-# party_or_admin = "PARTY"
-# judges = TRUE
-# judge_pv = "del_dime"
-# name_append = NULL
-# recode_set = NULL
-# recode_mixed = NULL
+df = "fjc_cl_j"
+jud = TRUE
+disp_drop = NULL
+noBP_IMC = TRUE
+diag = FALSE
+yr_i = 1980
+yr_f = 2020
+party_or_admin = "PARTY"
+judges = TRUE
+judge_pv = "del_dime"
+name_append = NULL
+recode_set = NULL
+recode_mixed = NULL
 
 win_los_reg <- function(
     df,
@@ -268,6 +268,11 @@ win_los_reg <- function(
           .,
           gender = as.factor(gender),
           party.affiliation.of.president = as.factor(party.affiliation.of.president),
+          # make age at term NA when it exceeds 100. (there are a couple of outliers that are obviously wrong)
+          age_at_term = case_when(
+            age_at_term > 100 ~ NA_real_,
+            TRUE ~ age_at_term
+          )
         )
       } else {
         .
@@ -287,6 +292,8 @@ win_los_reg <- function(
       "PLT_typ2",
       "REGION",
       "gender",
+      "age_at_term",
+      "green_gen",
       "party.affiliation.of.president",
       "imputed.dime.cfscore",
       "jcs.score.dw",
@@ -319,9 +326,9 @@ win_los_reg <- function(
       REGION = as.character(REGION),
       REGION = str_to_title(REGION)
     ) %>%
-    filter(
-      !is.na(REGION)
-    ) %>%
+    #filter(
+    #  !is.na(REGION)
+    #) %>%
     pivot_wider(
       names_from = PLT_typ2,
       values_from = value,
@@ -335,6 +342,37 @@ win_los_reg <- function(
       values_from = value,
       values_fill = 0
     ) %>%
+    mutate(
+      # make REGIONS columns NA if NA column (from pivot_wider, above) is 1
+      `Northeast/Mid-Atlantic` = case_when(
+        `NA` == 1 ~ NA_real_,
+        TRUE ~ `Northeast/Mid-Atlantic`
+      ),
+      South = case_when(
+        `NA` == 1 ~ NA_real_,
+        TRUE ~ South
+      ),
+      Midwest = case_when(
+        `NA` == 1 ~ NA_real_,
+        TRUE ~ Midwest
+      ),
+      Pacific = case_when(
+        `NA` == 1 ~ NA_real_,
+        TRUE ~ Pacific
+      ),
+      `Western Interior` = case_when(
+        `NA` == 1 ~ NA_real_,
+        TRUE ~ `Western Interior`
+      ),
+      Plains = case_when(
+        `NA` == 1 ~ NA_real_,
+        TRUE ~ Plains
+      ),
+    ) %>%
+    # drop NA category
+    select(
+      -`NA`
+      ) %>%
     mutate(
       value = 1,
     ) %>%
@@ -366,6 +404,7 @@ win_los_reg <- function(
           names_from = gender,
           values_from = value,
           values_fill = 0
+          #names_repair = "unique"
           ) %>%
           rename(
             .,
@@ -387,6 +426,42 @@ win_los_reg <- function(
             value = 1,
             ) %>%
           # drop the NA column
+          select(
+            .,
+            -`NA`
+          ) %>%
+          pivot_wider(
+            .,
+            names_from = green_gen,
+            values_from = value,
+            values_fill = 0
+          ) %>%
+          rename(
+            .,
+            "Pre-Green Gen" = "PG",
+            "Green Gen" = "GG",
+            "Post-Green Gen" = "AG",
+          ) %>%
+          mutate(
+            .,
+            # make generation columns NA if NA column (from pivot_wider, above)
+            # is 1
+            `Pre-Green Gen` = case_when(
+              `NA` == 1 ~ NA_real_,
+              TRUE ~ `Pre-Green Gen`
+            ),
+            `Green Gen` = case_when(
+              `NA` == 1 ~ NA_real_,
+              TRUE ~ `Green Gen`
+            ),
+            `Post-Green Gen` = case_when(
+              `NA` == 1 ~ NA_real_,
+              TRUE ~ `Post-Green Gen`
+            ),
+            # make new values column for newxt pivot wider 
+            value = 1
+          ) %>%
+          # drop NA column
           select(
             .,
             -`NA`
@@ -424,8 +499,9 @@ win_los_reg <- function(
       -rowID
       )
   
-  cor_mat <- cor(
-    cor_df
+  cor_mat <- stats::cor(
+    cor_df,
+    use = "complete.obs"
   )
   
   # make correlation matrix name excluding name elements that do not effect obs.
@@ -489,6 +565,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           party.affiliation.of.president,
         data = reg_df,
         family = 'binomial'
@@ -501,6 +579,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           imputed.dime.cfscore,
         data = reg_df,
         family = 'binomial'
@@ -513,6 +593,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.score.dw,
         data = reg_df,
         family = 'binomial'
@@ -525,6 +607,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.cfscore.cf,
         data = reg_df,
         family = 'binomial'
@@ -537,6 +621,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dw,
         data = reg_df,
         family = 'binomial'
@@ -549,6 +635,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dime.cfscore,
         data = reg_df,
         family = 'binomial'
@@ -561,6 +649,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dw,
         data = reg_df,
         family = 'binomial'
@@ -573,6 +663,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dime.cfscore,
         data = reg_df,
         family = 'binomial'
@@ -585,6 +677,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dw,
         data = reg_df,
         family = 'binomial'
@@ -597,6 +691,8 @@ win_los_reg <- function(
           PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dime.cfscore,
         data = reg_df,
         family = 'binomial'
@@ -620,6 +716,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
@@ -635,6 +733,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -650,6 +750,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.score.dw,
         data = reg_df %>%
           filter(
@@ -665,6 +767,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
@@ -680,6 +784,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dw,
         data = reg_df %>%
           filter(
@@ -695,6 +801,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -710,6 +818,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dw,
         data = reg_df %>%
           filter(
@@ -725,6 +835,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -740,6 +852,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dw,
         data = reg_df %>%
           filter(
@@ -755,6 +869,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -778,6 +894,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
@@ -793,6 +911,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -808,6 +928,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.score.dw,
         data = reg_df %>%
           filter(
@@ -823,6 +945,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
@@ -838,6 +962,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dw,
         data = reg_df %>%
           filter(
@@ -853,6 +979,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -868,6 +996,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dw,
         data = reg_df %>%
           filter(
@@ -883,6 +1013,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -898,6 +1030,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dw,
         data = reg_df %>%
           filter(
@@ -913,6 +1047,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -936,6 +1072,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
@@ -951,6 +1089,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -966,6 +1106,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.score.dw,
         data = reg_df %>%
           filter(
@@ -981,6 +1123,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
@@ -996,6 +1140,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dw,
         data = reg_df %>%
           filter(
@@ -1011,6 +1157,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -1026,6 +1174,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dw,
         data = reg_df %>%
           filter(
@@ -1041,6 +1191,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -1056,6 +1208,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dw,
         data = reg_df %>%
           filter(
@@ -1071,6 +1225,8 @@ win_los_reg <- function(
           #PLT_typ2 +
           REGION +
           gender +
+          #age_at_term +
+          green_gen +
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
@@ -1111,6 +1267,12 @@ win_los_reg <- function(
         "Genderm", "Male"
       ) %>%
       str_replace_all(
+        "Green_gengg", "Green Generation (1935-1950)"
+      ) %>%
+      str_replace_all(
+        "Green_genpg", "Pre-Green Generation (Pre-1935)"
+      ) %>%
+      str_replace_all(
         "Imputed.dime.cfscore", "DIME Score (CF)"
       ) %>%
       str_replace_all(
@@ -1144,7 +1306,7 @@ win_los_reg <- function(
       log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
       #grid = TRUE,
       show.values = TRUE,
-      axis.lim = c(0.5,2),
+      #axis.lim = c(0.5,3),
       colors = "viridis",
       value.size = 2.5,
       spacing = 0.65,
@@ -1831,7 +1993,7 @@ win_los_reg <- function(
         log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
         #grid = TRUE,
         show.values = TRUE,
-        axis.lim = c(0.5,2),
+        #axis.lim = c(0.5,3),
         colors = "viridis",
         value.size = 2.5,
         spacing = 0.65,
@@ -1953,7 +2115,7 @@ win_los_reg <- function(
         log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
         #grid = TRUE,
         show.values = TRUE,
-        axis.lim = c(0.5,2),
+        #axis.lim = c(0.5,3),
         colors = "viridis",
         value.size = 2.5,
         spacing = 0.65,
@@ -2074,7 +2236,7 @@ win_los_reg <- function(
         log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
         #grid = TRUE,
         show.values = TRUE,
-        axis.lim = c(0.5,2),
+        #axis.lim = c(0.5,3),
         colors = "viridis",
         value.size = 2.5,
         spacing = 0.65,
