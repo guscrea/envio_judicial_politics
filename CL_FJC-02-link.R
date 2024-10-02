@@ -11,7 +11,7 @@ library(vtable)
 library(glm2) # for logistic regression
 library(car) # for vif scores
 library(sjPlot) # for reg. forest plots
-library(lubridate) 
+library(lubridate)
 
 # Read in Court Listener Data ####
 
@@ -270,7 +270,8 @@ cl_e <- cl_e %>%
   ungroup()
 
 # drop component dfs
-rm(cl_court, cl_people_peo, cl_people_pol)
+rm(cl_court, #cl_people_peo,
+   cl_people_pol)
 
 # Examine & Clean Court Listener Data ####
 
@@ -1064,5 +1065,156 @@ lapply(
   yr_i = 1980,
   yr_f = 2020,
   party_or_admin = "PARTY",
-  judges = TRUE
+  judges = TRUE,
+  RESL = FALSE
   )
+
+
+# Read in RESL data with judges
+
+resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
+  # drop some variables
+  select(
+    -gender
+  ) %>%
+  # clean up some variables
+  mutate(
+    case_date = mdy(case_date), # this causes problems, though: cases from 1922
+    # to 1968 are transformed to 2022-2068. We need to correct.
+    yr = year(case_date),
+    yr = case_when(
+      yr >= 2022 & yr <= 2068 ~ yr-100,
+      TRUE ~ yr
+    ),
+    case_date = ymd(
+      str_c(
+        yr,
+        month(case_date),
+        day(case_date),
+        sep = "-"
+        )
+      )
+  ) %>%
+  # makes names match fjc_cl_j data
+  rename(
+    "CIRCUIT" = "circuit",
+    "DISTRICT" = "district",
+    "DOCKET" = "docket",
+    "TERMDATE" = "case_date",
+    "PLT" = "plt",
+    "PLT_typ" = "plt_typ",
+    "DEF" = "def",
+    "DEF_typ" = "def_typ",
+    "gender" = "Gender",
+    ) %>%
+  rowwise() %>%
+  mutate(
+    # make placeholder variables for data compatibility
+    jud_or_set = 1,
+    # modify or build needed extra variables
+    date_dobA = ymd(as.character(str_c(Birth.Year, Birth.Month, Birth.Day, sep = "-"))),
+    TERMDATE = ymd(TERMDATE),
+    yr_file = year(TERMDATE),
+    FILEDATE = TERMDATE, # duration is zero since we don't know when cases
+    # started in the RESL data
+    PLT_wl = case_when(
+      outcome == "plaintiff" | 
+        outcome == "mixed" ~ "w",
+      outcome == "defendant" ~ "l",
+      outcome == "none" | outcome == "unknown" ~ "n"
+    ),
+    gender = case_when(
+      gender == "Male" ~ "m",
+      gender == "Female" ~ "f"
+    )
+  ) %>%
+  rowwise() %>%
+  mutate(
+    # transform PLT_typ and DEF_typ into just the leading plaintiff/def type
+    # as specified in FJC data
+    PLT_typ = str_split(PLT_typ, "%"),
+    DEF_typ = str_split(DEF_typ, "%"),
+    PLT_typ = PLT_typ[1],
+    DEF_typ = DEF_typ[1],
+    PLT_typ = str_to_upper(PLT_typ),
+    DEF_typ = str_to_upper(DEF_typ),
+    PLT_typ = case_when(
+      PLT_typ == "INDIVIDUAL" ~ "IND",
+      PLT_typ == "STATE" ~ "STA",
+      PLT_typ == "INDUSTRY" ~ "BIZ",
+      PLT_typ == "TRADE_ASSN" ~ "BIZ",
+      PLT_typ == "LOCAL" ~ "LOC",
+      PLT_typ == "PUBLIC_ORG" ~ "LOC",
+      TRUE ~ PLT_typ
+    ),
+    DEF_typ = case_when(
+      DEF_typ == "INDIVIDUAL" ~ "IND",
+      DEF_typ == "STATE" ~ "STA",
+      DEF_typ == "INDUSTRY" ~ "BIZ",
+      DEF_typ == "TRADE_ASSN" ~ "BIZ",
+      DEF_typ == "LOCAL" ~ "LOC",
+      DEF_typ == "PUBLIC_ORG" ~ "LOC",
+      TRUE ~ DEF_typ
+    )
+  ) %>%
+  ungroup() %>%
+  #join region info
+  left_join(
+    dist_crosswalk,
+    by = "DISTRICT"
+  ) %>%
+  # join CL judge demographics
+  left_join(
+    cl_people_peo %>%
+      select(
+        fjc_id, date_dob
+        ) %>%
+      rename(
+        "jid" = "fjc_id"
+        ) %>%
+      # get rid of NAs in jid
+      filter(
+        !is.na(jid)
+      ),
+    by = "jid"
+  ) %>%
+  mutate(
+    age_at_term = as.numeric((TERMDATE-date_dob)/365.25),
+    green_gen = case_when(
+      date_dob < ymd("1935-01-01") ~ "PG",
+      date_dob >= ymd("1935-01-01") & date_dob <= ymd("1950-12-31") ~ "GG",
+      date_dob > ymd("1950-12-31") ~ "AG"
+    ),
+    green_gen = as.factor(green_gen),
+    ooc_mc1 = case_when(
+      ooc_mc1 == "military" ~ "Other Topic",
+      ooc_mc1 == "unknown" ~ "Other Topic",
+      ooc_mc1 == "disaster recovery" ~ "Other Topic",
+      ooc_mc1 == "legal & procedural" ~ "Other Topic",
+      ooc_mc1 == "non-environmental" ~ "Other Topic",
+      ooc_mc1 == "recreation" ~ "Other Topic",
+      TRUE ~ ooc_mc1
+    ),
+    ooc_mc1 = str_to_title(ooc_mc1),
+    ooc_mc1 = as.factor(ooc_mc1)
+  )
+
+
+# loop through each judge_pv var with win_loss_reg 
+judge_pv_list <- c("prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw",
+                   "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime")
+
+lapply(
+  judge_pv_list,
+  win_los_reg,
+  df = "resl",
+  jud = TRUE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = FALSE,
+  yr_i = 1980,
+  yr_f = 2020,
+  party_or_admin = "PARTY",
+  judges = TRUE,
+  RESL = TRUE
+)

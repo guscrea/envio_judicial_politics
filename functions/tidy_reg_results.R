@@ -5,10 +5,10 @@
 # m_name = readable name of model
 
 # for testing
-# m = log_wl_model
-# m_name = "Full Model"
-# judges = TRUE
-# judge_pv = "del_dime"
+m = log_wl_model
+m_name = "Full Model"
+judges = TRUE
+judge_pv = "del_dime"
 
 tidy_results <- function(m, m_name,judges,judge_pv = NULL){
   df <- tidy(m) %>%
@@ -29,6 +29,10 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
         term == "REGIONPLAINS" ~ "Plains",
         term == "REGIONSOUTH" ~ "South",
         term == "REGIONWESTERN INTERIOR" ~ "Western Interior",
+        term == "ooc_mc1Energy & Mineral Resources" ~ "Energy & Mineral Resources",
+        term == "ooc_mc1Other Topic" ~ "Other Topic",
+        term == "ooc_mc1Waste & Pollution" ~ "Waste & Pollution",
+        term == "ooc_mc1Conservation" ~ "Conservation",
         term == "prez_nameCarter" ~ "Carter",
         term == "prez_nameReagan" ~ "Reagan",
         term == "prez_nameH.W. Bush" ~ "H.W. Bush",
@@ -156,6 +160,16 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       val = ""
     )
   
+  # env focus header
+  env_row <- df %>%
+    filter(
+      row_number() == 1
+    ) %>%
+    mutate(
+      var_name_pretty = "Environmental Focus (Conservation = ref)",
+      val = ""
+    )
+  
   # judge sex header
   sex_row <- df %>%
     filter(
@@ -265,7 +279,8 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
   p_typ_list <- c("Federal|Firms|Individuals|Local|Other|State Gov")
   p_typ_chunk <- df %>%
     filter(
-      str_detect(var_name_pretty, p_typ_list)
+      str_detect(var_name_pretty, p_typ_list),
+      !str_detect(var_name_pretty, "Other Topic")
     )
     
   #region chunk
@@ -275,6 +290,14 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
     str_detect(var_name_pretty, region_list)
     )
   
+  #environmental focus chunk
+  env_list <- c("Waste|Conservation|Energy|Other Topic")
+  env_chunk <- df %>%
+    filter(
+      str_detect(var_name_pretty, env_list)
+    )
+  
+  unique(df$var_name_pretty)
   #sex chunk
   sex_list <- c("Male")
   sex_chunk <- df %>%
@@ -321,6 +344,8 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       p_typ_chunk,
       reg_row,
       region_chunk,
+      env_row,
+      env_chunk,
       sex_row,
       sex_chunk,
       gen_row,
@@ -339,6 +364,8 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       p_typ_chunk,
       reg_row,
       region_chunk,
+      env_row,
+      env_chunk,
       sex_row,
       sex_chunk,
       gen_row,
