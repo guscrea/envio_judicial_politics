@@ -312,7 +312,7 @@ cl_e_clean_simp <- cl_e_clean %>%
     id, yr_file
   ) %>%
   mutate(
-    data_type = "Clean Data (No BP or IMC)\n(n = 29,174)"
+    data_type = "Base Data (No BP or IMC)\n(n = 29,174)"
   )
 
 # plot distribution of years for all and for cleaned data, for comparison
@@ -329,7 +329,7 @@ plot_all_clean <- bind_rows(
   ) +
   geom_bar(
     position = "identity",
-    alpha = .7,
+    alpha = .8,
     #color = "#777777"
   ) +
   scale_fill_grey() + 
@@ -641,10 +641,10 @@ fjc_cl_j_reg_simp <- simp_filt(
     !is.na(state.delegation.dime.cfscore)
   ) %>%
   select(
-    id, yr_file
+    id, yr_file, DISP
   ) %>%
   mutate(
-    data_type = "Final data used for analysis\n(n = 13,341)"
+    data_type = "Cleaned Data \n(n = 13,341)"
   )
 
 
@@ -653,15 +653,22 @@ fjc_cl_j_reg_simp <- simp_filt(
 plot_cl_fjc <- bind_rows(
   cl_e_clean_simp %>%
     mutate(
-      data_type = "Clean data (No BP or IMC)\n(n = 29,174)"
+      data_type = "Base data (No BP or IMC)\n(n = 29,174)"
     ),
-  cl_e_clean_j_simp %>%
+  # cl_e_clean_j_simp %>%
+  #   mutate(
+  #     data_type = "Clean data with judge recorded\n(n = 21,973)"
+  #   ),
+  #fjc_cl_simp,
+  fjc_cl_j_reg_simp,
+  fjc_cl_j_reg_simp %>%
+    filter(
+      DISP %in% c(2,3,14,6,7,8,9,17,19,20)
+    ) %>%
     mutate(
-      data_type = "Clean data with judge recorded\n(n = 21,973)"
-    ),
-  fjc_cl_simp,
-  fjc_cl_j_reg_simp
-) %>%
+      data_type = "Final data used for analysis\n(n = 4,535)"
+    )
+  ) %>%
   ggplot(
     aes(
       x = yr_file,
@@ -671,7 +678,7 @@ plot_cl_fjc <- bind_rows(
   ) +
   geom_bar(
     position = "identity",
-    alpha = .7,
+    alpha = .8,
     #color = "#777777"
   ) +
   scale_fill_grey() + 
@@ -819,11 +826,67 @@ plot_fjc_cl_judges <-  plot_PD_combo_heatmap(
     disp_drop = NULL,
     noBP_IMC = TRUE,
     diag = TRUE
+  ) %>% filter(
+    !is.na(PLT_typ),
+    !is.na(REGION),
+    !is.na(yr_file),
+    !is.na(fjc_id),
+    DISP %in% c(2,3,14,6,7,8,9,17,19,20),
+    !is.na(state.delegation.dime.cfscore)
+  ) ,
+  yr_start = 1980,
+  yr_end = 2022,
+  l_typs = l_typs,
+  title = "Plaintiff and Defendant Type Combinations - Data for Analysis (with intra-type cases) - District Courts 1980-2022",
+  court_level = "D"
+)
+
+# Plot heat maps of litigant types - FJC data alone
+plot_fjc_raw <- plot_PD_combo_heatmap(
+  df = simp_filt(
+    df = "fjc_e",
+    jud = TRUE,
+    disp_drop = NULL,
+    noBP_IMC = TRUE,
+    diag = TRUE
+  ),
+  yr_start = 1980,
+  yr_end = 2022,
+  l_typs = l_typs,
+  title = "Plaintiff and Defendant Type Combinations - FJC Data Alone - District Courts 1980-2022",
+  court_level = "D"
+)
+
+# plot plt-def distributions in relation
+plot_fjc_raw / plot_fjc_cl_judges +
+  plot_annotation(tag_levels = 'A')  & 
+  theme(plot.tag = element_text(face = "bold"))
+
+# save combo plot 
+ggsave(
+  "PLT-DEF_matrix_compare.png",
+  units = "mm",
+  width = 180,
+  height =  300,
+  path = "Figures"
+)
+
+# NOW WITH NO DIAG
+
+# Plot heat maps of litigant types - FJC-CL combined data
+plot_fjc_cl_judges <-  plot_PD_combo_heatmap(
+  df = simp_filt(
+    df = "fjc_cl_j",
+    jud = TRUE,
+    disp_drop = NULL,
+    noBP_IMC = TRUE,
+    diag = FALSE
     ) %>% filter(
       !is.na(PLT_typ),
       !is.na(REGION),
       !is.na(yr_file),
       !is.na(fjc_id),
+      DISP %in% c(2,3,14,6,7,8,9,17,19,20),
       !is.na(state.delegation.dime.cfscore)
     ) ,
   yr_start = 1980,
@@ -840,7 +903,7 @@ plot_fjc_raw <- plot_PD_combo_heatmap(
     jud = TRUE,
     disp_drop = NULL,
     noBP_IMC = TRUE,
-    diag = TRUE
+    diag = FALSE
   ),
   yr_start = 1980,
   yr_end = 2022,
@@ -856,12 +919,14 @@ plot_fjc_raw / plot_fjc_cl_judges +
 
 # save combo plot 
 ggsave(
-  "PLT-DEF_matrix_compare.png",
+  "PLT-DEF_matrix_compare_no_diag.png",
   units = "mm",
   width = 180,
   height =  300,
   path = "Figures"
   )
+
+
 
 
 
@@ -959,7 +1024,8 @@ plot_dist_fjc_cl_j <- simp_filt(
     !is.na(REGION),
     !is.na(yr_file),
     !is.na(fjc_id),
-    !is.na(state.delegation.dime.cfscore)
+    !is.na(state.delegation.dime.cfscore),
+    DISP %in% c(2,3,14,6,7,8,9,17,19,20)
   ) %>%
   mutate(
     PLT_typ1 = case_when(
