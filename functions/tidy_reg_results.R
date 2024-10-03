@@ -5,10 +5,10 @@
 # m_name = readable name of model
 
 # for testing
-m = log_wl_model
-m_name = "Full Model"
-judges = TRUE
-judge_pv = "del_dime"
+# m = log_wl_model
+# m_name = "Full Model"
+# judges = TRUE
+# judge_pv = "del_dime"
 
 tidy_results <- function(m, m_name,judges,judge_pv = NULL){
   df <- tidy(m) %>%
@@ -102,6 +102,15 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
   # party; will be 0 if it's for prez admin.
   party_or_admin = length(party_or_admin$var_name_pretty)
   
+  # determine if resl data are being used or not
+  env_list <- c("Waste|Conservation|Energy|Other Topic")
+  resl_or_not <- df %>%
+    filter(
+      str_detect(var_name_pretty, env_list)
+    )
+  resl_or_not = length(resl_or_not$val)
+  # resl_or_not will be 6 if RESL data are used; 0 if not. 
+  
   # create header rows for output
   
   # prez header
@@ -161,6 +170,7 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
     )
   
   # env focus header
+  if(resl_or_not > 0){
   env_row <- df %>%
     filter(
       row_number() == 1
@@ -169,6 +179,12 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       var_name_pretty = "Environmental Focus (Conservation = ref)",
       val = ""
     )
+  } else {
+    env_row <- df %>%
+      filter(
+        var_name_pretty == "words that never appear in var_name_pretty"
+      )
+  }
   
   # judge sex header
   sex_row <- df %>%
@@ -209,7 +225,7 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
         var_name_pretty = "Judicial Ideology",
         val = ""
       )
-  } else{
+  } else {
     .
   }
   
@@ -282,22 +298,28 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       str_detect(var_name_pretty, p_typ_list),
       !str_detect(var_name_pretty, "Other Topic")
     )
-    
+  
   #region chunk
   region_list <- c("Northeast|Pacific|Plains|South|Western")
   region_chunk <- df %>%
-  filter(
-    str_detect(var_name_pretty, region_list)
+    filter(
+      str_detect(var_name_pretty, region_list)
     )
   
   #environmental focus chunk
-  env_list <- c("Waste|Conservation|Energy|Other Topic")
-  env_chunk <- df %>%
-    filter(
-      str_detect(var_name_pretty, env_list)
-    )
+  if(resl_or_not > 0){
+    env_list <- c("Waste|Conservation|Energy|Other Topic")
+    env_chunk <- df %>%
+      filter(
+        str_detect(var_name_pretty, env_list)
+      )
+  } else {
+    env_chunk <- df %>%
+      filter(
+        str_detect(var_name_pretty, "Random words not in var_name_pretty")
+      )
+  }
   
-  unique(df$var_name_pretty)
   #sex chunk
   sex_list <- c("Male")
   sex_chunk <- df %>%
@@ -326,15 +348,15 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
         str_detect(var_name_pretty, jparty_list)
       )
   }
-    
+  
   # intercept chunk
   int_chunk <- df %>%
     filter(
       str_detect(var_name_pretty, "Intercept")
     )
-    
+  
   # assemble chunks with headers
-  if(party_or_admin > 0){
+  if(party_or_admin > 0 & judges == TRUE){
     df <- bind_rows(
       prez_row,
       prez_chunk,
@@ -355,8 +377,8 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       int_row,
       int_chunk,
       pandf_row
-      )
-    } else {
+    )
+  } else if(party_or_admin == 0 & judges == TRUE) {
     df <- bind_rows(
       prez_row,
       prez_chunk,
@@ -375,94 +397,124 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
       int_row,
       int_chunk,
       pandf_row
-      )
-    }
-    
-  # now get model summary stats and make pretty for joining to model estimates
-  g <- glance(m) %>%
-    pivot_longer(
-      cols = everything(),
-      names_to = "var_name_pretty",
-      values_to = "val"
-    ) %>%
-    # make names pretty
-    mutate(
-      var_name_pretty = case_when(
-        var_name_pretty == "null.deviance" ~ "Null deviance: ",
-        var_name_pretty == "deviance" ~ "Residual deviance: ",
-        var_name_pretty == "nobs" ~ "No. Obs.: ",
-        var_name_pretty == "BIC" ~ "BIC: ",
-        var_name_pretty == "AIC" ~ "AIC: ",
-        var_name_pretty == "logLik" ~ "Log Likelihood: ",
-        TRUE ~ var_name_pretty
-      ),
-      # round specified values
-      val = case_when(
-        var_name_pretty == "Null deviance: " ~ round(val,0),
-        var_name_pretty == "Residual deviance: " ~ round(val,0),
-        var_name_pretty == "df.null" ~ round(val,0),
-        var_name_pretty == "df.residual" ~ round(val,0),
-        var_name_pretty == "Log Likelihood: " ~ round(val,2),
-        var_name_pretty == "AIC: " ~ round(val,0),
-        var_name_pretty == "BIC: " ~ round(val,0),
-        TRUE ~ val
-      ),
-      # make no. obs pretty; change other values to characters
-      val = case_when(
-        var_name_pretty == "No. Obs.: " ~ prettyNum(val,","),
-        TRUE ~ as.character(val)
-      ),
-      val = case_when(
-        var_name_pretty == "Null deviance: " ~ 
-          str_c(val[var_name_pretty=="Null deviance: "],
-                " on ",
-                val[var_name_pretty=="df.null"],
-                " degrees of freedom",
-                sep = ""),
-        var_name_pretty == "Residual deviance: " ~ 
-          str_c(val[var_name_pretty=="Residual deviance: "],
-                " on ",
-                val[var_name_pretty=="df.residual"],
-                " degrees of freedom",
-                sep = ""),
-        TRUE ~ val
-      )
-    ) %>%
-    # drop rows no longer needed
-    filter(
-      var_name_pretty != "df.null",
-      var_name_pretty != "df.residual"
-    ) %>%
-    # order rows
-    mutate(
-      row_ord = case_when(
-        var_name_pretty == "Null deviance: " ~ 1,
-        var_name_pretty == "Residual deviance: " ~ 2,
-        var_name_pretty == "Log Likelihood: " ~ 3,
-        var_name_pretty == "AIC: " ~ 4,
-        var_name_pretty == "BIC: " ~ 5,
-        var_name_pretty == "No. Obs.: " ~ 6,
-        TRUE ~ 99
-      )
-    ) %>%
-    # drop any no-labeled rows
-    filter(
-      row_ord <= 6
-    ) %>%
-    arrange(
-      row_ord
-    ) %>%
-    select(
-      -row_ord
     )
+  } else if (party_or_admin > 0 & judges != TRUE){
+    df <- bind_rows(
+      prez_row,
+      prez_chunk,
+      timing_row,
+      timing_chunk,
+      p_typ_row,
+      p_typ_chunk,
+      reg_row,
+      region_chunk,
+      env_row,
+      env_chunk,
+      int_row,
+      int_chunk,
+      pandf_row
+    )
+  } else if(party_or_admin == 0 & judges != TRUE) {
+    df <- bind_rows(
+      prez_row,
+      prez_chunk,
+      p_typ_row,
+      p_typ_chunk,
+      reg_row,
+      region_chunk,
+      env_row,
+      env_chunk,
+      int_row,
+      int_chunk,
+      pandf_row
+    )
+  }
     
-  # join model reutls to model stats
-  df <- bind_rows(df, g)
-  
-  # rename vals colum to model name
-  df <- df %>%
+    # now get model summary stats and make pretty for joining to model estimates
+    g <- glance(m) %>%
+      pivot_longer(
+        cols = everything(),
+        names_to = "var_name_pretty",
+        values_to = "val"
+      ) %>%
+      # make names pretty
+      mutate(
+        var_name_pretty = case_when(
+          var_name_pretty == "null.deviance" ~ "Null deviance: ",
+          var_name_pretty == "deviance" ~ "Residual deviance: ",
+          var_name_pretty == "nobs" ~ "No. Obs.: ",
+          var_name_pretty == "BIC" ~ "BIC: ",
+          var_name_pretty == "AIC" ~ "AIC: ",
+          var_name_pretty == "logLik" ~ "Log Likelihood: ",
+          TRUE ~ var_name_pretty
+        ),
+        # round specified values
+        val = case_when(
+          var_name_pretty == "Null deviance: " ~ round(val,0),
+          var_name_pretty == "Residual deviance: " ~ round(val,0),
+          var_name_pretty == "df.null" ~ round(val,0),
+          var_name_pretty == "df.residual" ~ round(val,0),
+          var_name_pretty == "Log Likelihood: " ~ round(val,2),
+          var_name_pretty == "AIC: " ~ round(val,0),
+          var_name_pretty == "BIC: " ~ round(val,0),
+          TRUE ~ val
+        ),
+        # make no. obs pretty; change other values to characters
+        val = case_when(
+          var_name_pretty == "No. Obs.: " ~ prettyNum(val,","),
+          TRUE ~ as.character(val)
+        ),
+        val = case_when(
+          var_name_pretty == "Null deviance: " ~ 
+            str_c(val[var_name_pretty=="Null deviance: "],
+                  " on ",
+                  val[var_name_pretty=="df.null"],
+                  " degrees of freedom",
+                  sep = ""),
+          var_name_pretty == "Residual deviance: " ~ 
+            str_c(val[var_name_pretty=="Residual deviance: "],
+                  " on ",
+                  val[var_name_pretty=="df.residual"],
+                  " degrees of freedom",
+                  sep = ""),
+          TRUE ~ val
+        )
+      ) %>%
+      # drop rows no longer needed
+      filter(
+        var_name_pretty != "df.null",
+        var_name_pretty != "df.residual"
+      ) %>%
+      # order rows
+      mutate(
+        row_ord = case_when(
+          var_name_pretty == "Null deviance: " ~ 1,
+          var_name_pretty == "Residual deviance: " ~ 2,
+          var_name_pretty == "Log Likelihood: " ~ 3,
+          var_name_pretty == "AIC: " ~ 4,
+          var_name_pretty == "BIC: " ~ 5,
+          var_name_pretty == "No. Obs.: " ~ 6,
+          TRUE ~ 99
+        )
+      ) %>%
+      # drop any no-labeled rows
+      filter(
+        row_ord <= 6
+      ) %>%
+      arrange(
+        row_ord
+      ) %>%
+      select(
+        -row_ord
+      )
+    
+    # join model reutls to model stats
+    df <- bind_rows(df, g)
+    
+    # rename vals colum to model name
+    df <- df %>%
       rename(
         {{m_name}} := "val"
-        )
+      )
   
 }

@@ -724,12 +724,29 @@ fjc_cl_j <- fjc_cl_j %>%
   ungroup() %>%
   mutate(
     jud_or_set = case_when(
-      # call "in" for analysis cases that are dismissed, settled, or reach judgement.
+      # below, we make different determinations of what kinds of cases we want
+      # to include in an analysis. See FJC codebook for DISP codes.
+      # 
+      # most permissive:
+      # call "in" for analysis all cases that are dismissed, settled, or reach
+      # judgement.
       # note -8 signals missing disposition;it is excluded
-      # see FJC codebook for DISP codes
       #DISP %in% c(2,3,12,13,14,4,5,6,7,8,9,15,16,17,18,19,20) ~ 1,
-      # exclude dismissals and settlements from analysis (since judges have less role in such cases)
-      DISP %in% c(2,3,4,5,6,7,8,9,15,16,17,18,19,20) ~ 1,
+      # 
+      # middle ground:
+      # exclude vol. dismissals (12), judgement on default (4), statistical
+      # closings (18), awards of arbitrator (15), and stays pending
+      # bankruptcy (16) from analysis, since judges have less role in such
+      # cases. We also exclude settlements (13) and judgements on consent 
+      # (5; essentially, court-enforceable settlement agreements) since
+      # judges also play a minimal role in such cases. 
+      DISP %in% c(2,3,14,6,7,8,9,17,19,20) ~ 1,
+      #
+      # most aggressive exclusions:
+      # in addition to above, also exclude dismissals because of want of
+      # prosecution (2) and lack of jurisdiction (3), settlements (13) "other"
+      # dismissals (14) and "other" judgements (17)
+      #DISP %in% c(2,3,5,6,7,8,9,19,20) ~ 1,
       TRUE ~ 0
     )
   ) %>%
@@ -1024,51 +1041,7 @@ ggsave(
   path = "Figures"
   )
 
-# Run regressions ####
-
-
-# call win-loss regression
-source("functions/win_loss_logit_reg.R")
-
-# regression of plaintiff wins and losses
-# --> excluding BP and IMC
-# --> testing for association with party of president (partisan effect)
-
-# note: judicial ideology variable (judge_pv) can take on one of the following 
-# values. See Bonica and Sen (2021), Journal of Economic Perspectives, and
-# associated papers referenced in that overview paper.
-
-# --> "prez_party": the political party of the appointing president
-# --> "dime": the DIME score of the judge (based on political contributions;
-#.     imputed where missing.)
-# --> "jcs_dw": Judicial Common Space score based on D-W NOMINATE 
-# --> "jcs_cf":
-# --> "prez_dw":
-# --> "prez_dime":
-# --> "sen_dw":
-# --> "sen_dime":
-# --> "del_dw":
-# --> "del_dime"
-
-# loop through each judge_pv var with win_loss_reg 
-judge_pv_list <- c("prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw",
-                   "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime")
-
-lapply(
-  judge_pv_list,
-  win_los_reg,
-  df = "fjc_cl_j",
-  jud = TRUE,
-  disp_drop = NULL,
-  noBP_IMC = TRUE,
-  diag = FALSE,
-  yr_i = 1980,
-  yr_f = 2020,
-  party_or_admin = "PARTY",
-  judges = TRUE,
-  RESL = FALSE
-  )
-
+# Read in and format RESL data ####
 
 # Read in RESL data with judges
 
@@ -1092,8 +1065,8 @@ resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
         month(case_date),
         day(case_date),
         sep = "-"
-        )
       )
+    )
   ) %>%
   # makes names match fjc_cl_j data
   rename(
@@ -1106,7 +1079,7 @@ resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
     "DEF" = "def",
     "DEF_typ" = "def_typ",
     "gender" = "Gender",
-    ) %>%
+  ) %>%
   rowwise() %>%
   mutate(
     # make placeholder variables for data compatibility
@@ -1168,10 +1141,10 @@ resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
     cl_people_peo %>%
       select(
         fjc_id, date_dob
-        ) %>%
+      ) %>%
       rename(
         "jid" = "fjc_id"
-        ) %>%
+      ) %>%
       # get rid of NAs in jid
       filter(
         !is.na(jid)
@@ -1198,10 +1171,59 @@ resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
     ooc_mc1 = str_to_title(ooc_mc1),
     ooc_mc1 = as.factor(ooc_mc1)
   )
+# Run regressions - FJC / CL data ####
 
+
+# call win-loss regression
+source("functions/win_loss_logit_reg.R")
+
+# regression of plaintiff wins and losses
+# --> excluding BP and IMC
+# --> testing for association with party of president (partisan effect)
+
+# note: judicial ideology variable (judge_pv) can take on one of the following 
+# values. See Bonica and Sen (2021), Journal of Economic Perspectives, and
+# associated papers referenced in that overview paper.
+
+# --> "prez_party": the political party of the appointing president
+# --> "dime": the DIME score of the judge (based on political contributions;
+#.     imputed where missing.)
+# --> "jcs_dw": Judicial Common Space score based on D-W NOMINATE 
+# --> "jcs_cf":
+# --> "prez_dw":
+# --> "prez_dime":
+# --> "sen_dw":
+# --> "sen_dime":
+# --> "del_dw":
+# --> "del_dime"
 
 # loop through each judge_pv var with win_loss_reg 
-judge_pv_list <- c("prez_party", "dime", "jcs_dw", "jcs_cf", "prez_dw",
+judge_pv_list <- c("dime", "jcs_dw", "jcs_cf", "prez_party", "prez_dw",
+                   "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime")
+
+lapply(
+  judge_pv_list,
+  win_los_reg,
+  df = "fjc_cl_j",
+  jud = TRUE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = FALSE,
+  yr_i = 1980,
+  yr_f = 2020,
+  party_or_admin = "PARTY",
+  judges = TRUE,
+  RESL = FALSE
+  )
+
+
+# Run regressions - RESL data ####
+
+# call win-loss regression
+source("functions/win_loss_logit_reg.R")
+
+# loop through each judge_pv var with win_loss_reg 
+judge_pv_list <- c("dime", "jcs_dw", "jcs_cf", "prez_party", "prez_dw",
                    "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime")
 
 lapply(
@@ -1218,3 +1240,237 @@ lapply(
   judges = TRUE,
   RESL = TRUE
 )
+
+# Reformat ideology OR tables - FJC ####
+fjc_OR_table <- read_csv(
+  "regressions/ideology_OR_tables/ideology_OR_fjc.csv"
+)
+
+# ideology of ruling judge
+jud_chunk <- fjc_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "DIME|JCS")
+  )
+jud_head <- jud_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Ruling Judge"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# ideology of president
+prez_chunk <- fjc_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "Republican|President")
+  )
+prez_head <- prez_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Appointing President"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# ideology of senators
+sen_chunk <- fjc_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "Senate")
+  )
+sen_head <- sen_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Home State Senators"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# ideology of state del
+del_chunk <- fjc_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "State")
+  )
+del_head <- del_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Full State Dellegation"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# assemble chunks and headers
+fjc_OR_table <- bind_rows(
+  jud_head,
+  jud_chunk,
+  prez_head,
+  prez_chunk,
+  sen_head,
+  sen_chunk,
+  del_head,
+  del_chunk
+)
+
+# convert NAs to blanks
+fjc_OR_table <- fjc_OR_table %>%
+  mutate(
+    `Full Model` = as.character(`Full Model`),
+    `Full Model` = case_when(
+      is.na(`Full Model`) ~ "",
+      TRUE ~ `Full Model`
+      ),
+    `ENGO Plaintiffs` = as.character(`ENGO Plaintiffs`),
+    `ENGO Plaintiffs` = case_when(
+      is.na(`ENGO Plaintiffs`) ~ "",
+      TRUE ~ `ENGO Plaintiffs`
+      ),
+    `Federal Plaintiffs` = as.character(`Federal Plaintiffs`),
+    `Federal Plaintiffs` = case_when(
+      is.na(`Federal Plaintiffs`) ~ "",
+      TRUE ~ `Federal Plaintiffs`
+      ),
+    `Firm Plaintiffs` = as.character(`Firm Plaintiffs`),
+    `Firm Plaintiffs` = case_when(
+      is.na(`Firm Plaintiffs`) ~ "",
+      TRUE ~ `Firm Plaintiffs`
+      )
+  )
+
+
+write_csv(
+  fjc_OR_table,
+  file = str_c("regressions/ideology_OR_tables/ideology_OR_fjc_pretty.csv")
+)
+
+# reformat ideology OR tables - RESL ####
+resl_OR_table <- read_csv(
+  "regressions/ideology_OR_tables/ideology_OR_resl.csv"
+)
+
+# ideology of ruling judge
+jud_chunk <- resl_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "DIME|JCS")
+  )
+jud_head <- jud_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Ruling Judge"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# ideology of president
+prez_chunk <- resl_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "Republican|President")
+  )
+prez_head <- prez_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Appointing President"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# ideology of senators
+sen_chunk <- resl_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "Senate")
+  )
+sen_head <- sen_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Home State Senators"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# ideology of state del
+del_chunk <- resl_OR_table %>%
+  filter(
+    str_detect(`Indicator of Judicial Ideology`, "State")
+  )
+del_head <- del_chunk %>%
+  select(
+    `Indicator of Judicial Ideology`
+  ) %>%
+  mutate(
+    `Indicator of Judicial Ideology` = "Ideology of Full State Dellegation"
+  ) %>%
+  filter(
+    row_number() == 1
+  )
+
+# assemble chunks and headers
+resl_OR_table <- bind_rows(
+  jud_head,
+  jud_chunk,
+  prez_head,
+  prez_chunk,
+  sen_head,
+  sen_chunk,
+  del_head,
+  del_chunk
+)
+
+# convert NAs to blanks
+resl_OR_table <- resl_OR_table %>%
+  mutate(
+    `Full Model` = as.character(`Full Model`),
+    `Full Model` = case_when(
+      is.na(`Full Model`) ~ "",
+      TRUE ~ `Full Model`
+    ),
+    `ENGO Plaintiffs` = as.character(`ENGO Plaintiffs`),
+    `ENGO Plaintiffs` = case_when(
+      is.na(`ENGO Plaintiffs`) ~ "",
+      TRUE ~ `ENGO Plaintiffs`
+    ),
+    `Federal Plaintiffs` = as.character(`Federal Plaintiffs`),
+    `Federal Plaintiffs` = case_when(
+      is.na(`Federal Plaintiffs`) ~ "",
+      TRUE ~ `Federal Plaintiffs`
+    ),
+    `Firm Plaintiffs` = as.character(`Firm Plaintiffs`),
+    `Firm Plaintiffs` = case_when(
+      is.na(`Firm Plaintiffs`) ~ "",
+      TRUE ~ `Firm Plaintiffs`
+    ),
+    `Conservation Conflicts` = as.character(`Conservation Conflicts`),
+    `Conservation Conflicts` = case_when(
+      is.na(`Conservation Conflicts`) ~ "",
+      TRUE ~ `Conservation Conflicts`
+    ),
+    `Waste and Pollution Conflicts` = as.character(`Waste and Pollution Conflicts`),
+    `Waste and Pollution Conflicts` = case_when(
+      is.na(`Waste and Pollution Conflicts`) ~ "",
+      TRUE ~ `Waste and Pollution Conflicts`
+    )
+  )
+
+write_csv(
+  resl_OR_table,
+  file = str_c("regressions/ideology_OR_tables/ideology_OR_resl_pretty.csv")
+)
+

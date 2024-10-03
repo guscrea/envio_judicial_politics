@@ -4482,8 +4482,155 @@ win_los_reg <- function(
       all_models_tidy,
       log_wl_model_WP_tidy, by = "var_name_pretty"
     )
+    
+    # specify file name/path for resl output
+    just_ideology_path = "regressions/ideology_OR_tables/ideology_OR_resl.csv"
   } else {
-    .
+    # specify path for non-resl output
+    just_ideology_path = "regressions/ideology_OR_tables/ideology_OR_fjc.csv"
+  }
+  
+  # write out just ideology coeff results (as odds ratios)
+  # list of judge ideology variable names
+  ideology_vars <- c("Democratic|Republican|DIME Score|JCS Score|President Score|Senate Del|State Del")
+  
+  # write out assembled judge ideology variables 
+  
+  # first, assemble and transform variables of interest
+  just_judge_ideology <- all_models_tidy %>%
+    filter(
+      str_detect(var_name_pretty,ideology_vars),
+      !str_detect(var_name_pretty, "Appointing President's Party"),
+      !str_detect(var_name_pretty, "- stderr")
+    ) %>%
+    rowwise() %>%
+    mutate(
+      var_name_pretty = str_remove(var_name_pretty, " - est"),
+      # extract levels of significance from coeff.
+      full_sig = str_extract_all(`Full Model`, "\\*{1,3}|†"),
+      engo_sig = str_extract_all(`ENGO Plaintiffs`, "\\*{1,3}|†"),
+      fed_sig = str_extract_all(`Federal Plaintiffs`, "\\*{1,3}|†"),
+      biz_sig = str_extract_all(`Firm Plaintiffs`, "\\*{1,3}|†"),
+      # now remove signifiers of significance
+      `Full Model` = str_remove_all(`Full Model`, "\\*{1,3}|†"),
+      `ENGO Plaintiffs` = str_remove_all(`ENGO Plaintiffs`, "\\*{1,3}|†"),
+      `Federal Plaintiffs` = str_remove_all(`Federal Plaintiffs`, "\\*{1,3}|†"),
+      `Firm Plaintiffs` = str_remove_all(`Firm Plaintiffs`, "\\*{1,3}|†"),
+      # now make vars numeric
+      `Full Model` = as.numeric(`Full Model`),
+      `ENGO Plaintiffs` = as.numeric(`ENGO Plaintiffs`),
+      `Federal Plaintiffs` = as.numeric(`Federal Plaintiffs`),
+      `Firm Plaintiffs` = as.numeric(`Firm Plaintiffs`),
+      # now exponentiate (for odds ratios)
+      `Full Model` = round(exp(`Full Model`),4),
+      `ENGO Plaintiffs` = round(exp(`ENGO Plaintiffs`),4),
+      `Federal Plaintiffs` = round(exp(`Federal Plaintiffs`),4),
+      `Firm Plaintiffs` = round(exp(`Firm Plaintiffs`),4),
+      # get rid of character(0) values introduced above (turn them into NAs)
+      full_sig = ifelse(
+        length(full_sig) == 0, NA, full_sig
+      ),
+      engo_sig = ifelse(
+        length(engo_sig) == 0, NA, engo_sig
+      ),
+      fed_sig = ifelse(
+        length(fed_sig) == 0, NA, fed_sig
+      ),
+      biz_sig = ifelse(
+        length(biz_sig) == 0, NA, biz_sig
+      ),
+      # replace NAs with ""
+      full_sig = case_when(
+        is.na(full_sig) ~ "",
+        TRUE ~ full_sig
+      ),
+      engo_sig = case_when(
+        is.na(engo_sig) ~ "",
+        TRUE ~ engo_sig
+      ),
+      fed_sig = case_when(
+        is.na(fed_sig) ~ "",
+        TRUE ~ fed_sig
+      ),
+      biz_sig = case_when(
+        is.na(biz_sig) ~ "",
+        TRUE ~ biz_sig
+      ),
+      # now bring significance indicators back
+      `Full Model` = str_c(`Full Model`,full_sig),
+      `ENGO Plaintiffs` = str_c(`ENGO Plaintiffs`,engo_sig),
+      `Federal Plaintiffs` = str_c(`Federal Plaintiffs`,fed_sig),
+      `Firm Plaintiffs` = str_c(`Firm Plaintiffs`, biz_sig)
+    ) %>%
+    # drop significance columns
+    select(
+      -c(full_sig, engo_sig, fed_sig, biz_sig)
+    ) %>%
+    ungroup() %>%
+    {
+      if(RESL == TRUE){
+        rowwise(.,) %>%
+          mutate(
+            .,
+            # extract levels of significance from coeff.
+            con_sig = str_extract_all(`Conservation Conflicts`, "\\*{1,3}|†"),
+            wp_sig = str_extract_all(`Waste and Pollution Conflicts`, "\\*{1,3}|†"),
+            # now remove signifiers of significance
+            `Conservation Conflicts` = str_remove_all(`Conservation Conflicts`, "\\*{1,3}|†"),
+            `Waste and Pollution Conflicts` = str_remove_all(`Waste and Pollution Conflicts`, "\\*{1,3}|†"),
+            # now make vars numeric
+            `Conservation Conflicts` = as.numeric(`Conservation Conflicts`),
+            `Waste and Pollution Conflicts` = as.numeric(`Waste and Pollution Conflicts`),
+            # now exponentiate (for odds ratios)
+            `Conservation Conflicts` = round(exp(`Conservation Conflicts`),4),
+            `Waste and Pollution Conflicts` = round(exp(`Waste and Pollution Conflicts`),4),
+            # get rid of character(0) values introduced above (turn them into NAs)
+            con_sig = ifelse(
+              length(con_sig) == 0, NA, con_sig
+            ),
+            wp_sig = ifelse(
+              length(wp_sig) == 0, NA, wp_sig
+            ),
+            # replace NAs with ""
+            con_sig = case_when(
+              is.na(con_sig) ~ "",
+              TRUE ~ con_sig
+            ),
+            wp_sig = case_when(
+              is.na(wp_sig) ~ "",
+              TRUE ~ wp_sig
+            ),
+            # now bring significance indicators back
+            `Conservation Conflicts` = str_c(`Conservation Conflicts`,con_sig),
+            `Waste and Pollution Conflicts` = str_c(`Waste and Pollution Conflicts`,wp_sig)
+          ) %>%
+          # drop significance columns
+          select(
+            .,
+            -c(con_sig, wp_sig)
+          ) %>%
+          ungroup(.,)
+      } else {
+        .
+      }
+    } %>%
+    rename(
+      "Indicator of Judicial Ideology" = "var_name_pretty"
+    )
+  
+  # for first ideology variable in list (DIME score of ruling judge), create
+  # new csv file. for subsequent variables, append to this file.
+  if(judge_pv == "dime"){
+    write_csv(
+      just_judge_ideology,
+      just_ideology_path
+    )
+  } else {
+    write_csv(
+      just_judge_ideology,
+      just_ideology_path,
+      append = TRUE
+    )
   }
   
   # with models assembled, drop variable names with stderr
@@ -4512,7 +4659,27 @@ win_los_reg <- function(
         is.na(`Firm Plaintiffs`) ~ "",
         TRUE ~ `Firm Plaintiffs`
       )
-    )
+    ) %>%
+    # get rid of NAs for conservation/ waste and pollution columns if present
+    {
+      if(RESL == TRUE){
+        # get rid of NAs; replace with blanks
+        mutate(
+          .,
+          `Conservation Conflicts` = case_when(
+            is.na(`Conservation Conflicts`) ~ "",
+            TRUE ~ `Conservation Conflicts`
+          ),
+          `Waste and Pollution Conflicts` = case_when(
+            is.na(`Waste and Pollution Conflicts`) ~ "",
+            TRUE ~ `Waste and Pollution Conflicts`
+          )
+        )
+      } else {
+        .
+      }
+      
+    }
   
   ##write out tidy regression results as csv
   write_csv(
