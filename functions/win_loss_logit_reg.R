@@ -1354,10 +1354,10 @@ win_los_reg <- function(
       log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
       #grid = TRUE,
       show.values = TRUE,
-      #axis.lim = c(0.5,3),
+      axis.lim = c(0.1,10),
       colors = "viridis",
       value.size = 2.5,
-      spacing = 0.65,
+      spacing = 0.75,
       legend.title = "Model",
       vline.color = "grey",
       title = NULL,
@@ -2041,10 +2041,10 @@ win_los_reg <- function(
         log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
         #grid = TRUE,
         show.values = TRUE,
-        #axis.lim = c(0.5,3),
+        axis.lim = c(0.1,10),
         colors = "viridis",
         value.size = 2.5,
-        spacing = 0.65,
+        spacing = 0.75,
         legend.title = "Model",
         vline.color = "grey",
         title = NULL,
@@ -2163,10 +2163,10 @@ win_los_reg <- function(
         log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
         #grid = TRUE,
         show.values = TRUE,
-        #axis.lim = c(0.5,3),
+        axis.lim = c(0.1,10),
         colors = "viridis",
         value.size = 2.5,
-        spacing = 0.65,
+        spacing = 0.75,
         legend.title = "Model",
         vline.color = "grey",
         title = NULL,
@@ -2284,10 +2284,10 @@ win_los_reg <- function(
         log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
         #grid = TRUE,
         show.values = TRUE,
-        #axis.lim = c(0.5,3),
+        axis.lim = c(0.1,10),
         colors = "viridis",
         value.size = 2.5,
-        spacing = 0.65,
+        spacing = 0.75,
         legend.title = "Model",
         vline.color = "grey",
         title = NULL,
@@ -3482,22 +3482,21 @@ win_los_reg <- function(
       )
     
     # remove Plains
-    axis_labels_list <- axis_labels_list[axis_labels_list != "Plains"]
+    #axis_labels_list <- axis_labels_list[axis_labels_list != "Plains"]
     
-    # plot model results with sjPlot
+    # plot model results with sjPlot - just by plaintiff type - not OOC
     all_models <- plot_models(
       log_wl_model, 
       log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
-      log_wl_model_WP, log_wl_model_CON,
       #grid = TRUE,
       show.values = TRUE,
-      #axis.lim = c(0.5,3),
+      axis.lim = c(0.1,10),
       #rm.terms = c("REGIONPlains"), # we remove the plains region from the 
       # forest plots because, particularly for the ENGO model, the error bars 
       # are off the charts b/c there are so few observations!
       colors = "viridis",
       value.size = 2.5,
-      spacing = 0.65,
+      spacing = 0.75,
       legend.title = "Model",
       vline.color = "grey",
       title = NULL,
@@ -3517,6 +3516,41 @@ win_los_reg <- function(
       height = 14,
       path = "regressions/forest_plots"
     )
+    
+    
+    # plot model results with sjPlot - by OOC
+    all_models <- plot_models(
+      log_wl_model, 
+      log_wl_model_WP, log_wl_model_CON,
+      #grid = TRUE,
+      show.values = TRUE,
+      axis.lim = c(0.1,10),
+      #rm.terms = c("REGIONPlains"), # we remove the plains region from the 
+      # forest plots because, particularly for the ENGO model, the error bars 
+      # are off the charts b/c there are so few observations!
+      colors = "viridis",
+      value.size = 2.5,
+      spacing = 0.75,
+      legend.title = "Model",
+      vline.color = "grey",
+      title = NULL,
+      axis.labels = axis_labels_list,
+      m.labels = c("All Plaintiffs","Waste and Pollution", "Conservation")
+      #m.labels = c("Federal Government Only", "ENGOs Only", "Firms Only")
+    ) + theme_linedraw()
+    
+    # plot
+    all_models
+    
+    #save
+    ggsave(
+      str_c("Logit_Odds_Ratios", save_name, "OOC.png"),
+      plot = last_plot(),
+      width = 7,
+      height = 14,
+      path = "regressions/forest_plots/OOC"
+    )
+    
     
   } else if (party_or_admin == "ADMIN" & judges == TRUE & RESL == FALSE) {
     
@@ -4181,10 +4215,10 @@ win_los_reg <- function(
       log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
       #grid = TRUE,
       show.values = TRUE,
-      #axis.lim = c(0.5,3),
+      axis.lim = c(0.1,10),
       colors = "viridis",
       value.size = 2.5,
-      spacing = 0.65,
+      spacing = 0.75,
       legend.title = "Model",
       vline.color = "grey",
       title = NULL,
@@ -4303,10 +4337,10 @@ win_los_reg <- function(
       log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
       #grid = TRUE,
       show.values = TRUE,
-      #axis.lim = c(0.5,3),
+      axis.lim = c(0.1,10),
       colors = "viridis",
       value.size = 2.5,
-      spacing = 0.65,
+      spacing = 0.75,
       legend.title = "Model",
       vline.color = "grey",
       title = NULL,
@@ -4424,10 +4458,10 @@ win_los_reg <- function(
       log_wl_model_fed, log_wl_model_NGO, log_wl_model_BIZ,
       #grid = TRUE,
       show.values = TRUE,
-      #axis.lim = c(0.5,3),
+      axis.lim = c(0.1,10),
       colors = "viridis",
       value.size = 2.5,
-      spacing = 0.65,
+      spacing = 0.75,
       legend.title = "Model",
       vline.color = "grey",
       title = NULL,

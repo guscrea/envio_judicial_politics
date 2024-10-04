@@ -797,7 +797,7 @@ fjc_cl_j <- fjc_cl_j %>%
 
 fjc_cl_j$age_at_term[1]
 
-# Plot heatmaps ######
+# Plot FJC heatmaps ######
 
 # call function for generating graphics input dfs
 source("functions/simple_filter.R")
@@ -837,7 +837,7 @@ plot_fjc_cl_judges <-  plot_PD_combo_heatmap(
   yr_start = 1980,
   yr_end = 2022,
   l_typs = l_typs,
-  title = "Plaintiff and Defendant Type Combinations - Data for Analysis (with intra-type cases) - District Courts 1980-2022",
+  title = "Plaintiff and Defendant Type Combinations - FJC Data for Analysis (with intra-type cases) - District Courts 1980-2022",
   court_level = "D"
 )
 
@@ -874,7 +874,7 @@ ggsave(
 # NOW WITH NO DIAG
 
 # Plot heat maps of litigant types - FJC-CL combined data
-plot_fjc_cl_judges <-  plot_PD_combo_heatmap(
+plot_fjc_cl_judges_nodiag <-  plot_PD_combo_heatmap(
   df = simp_filt(
     df = "fjc_cl_j",
     jud = TRUE,
@@ -892,7 +892,7 @@ plot_fjc_cl_judges <-  plot_PD_combo_heatmap(
   yr_start = 1980,
   yr_end = 2022,
   l_typs = l_typs,
-  title = "Plaintiff and Defendant Type Combinations - Data for Analysis (with intra-type cases) - District Courts 1980-2022",
+  title = "Plaintiff and Defendant Type Combinations - FJC Data for Analysis (w/o intra-type suits) - District Courts 1980-2022",
   court_level = "D"
   )
 
@@ -913,7 +913,7 @@ plot_fjc_raw <- plot_PD_combo_heatmap(
   )
 
 # plot plt-def distributions in relation
-plot_fjc_raw / plot_fjc_cl_judges +
+plot_fjc_raw / plot_fjc_cl_judges_nodiag +
   plot_annotation(tag_levels = 'A')  & 
   theme(plot.tag = element_text(face = "bold"))
 
@@ -1237,6 +1237,156 @@ resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
     ooc_mc1 = str_to_title(ooc_mc1),
     ooc_mc1 = as.factor(ooc_mc1)
   )
+# Plot FJC-RESL heatmap comparison ######
+
+# prep RESL data for heatmap function
+resl_heatmap <- resl %>%
+  rename(
+    "fjc_id" = "ID"
+    ) %>%
+  mutate(
+    # make up disposition value that will be counted "in"
+    DISP = 6
+  )
+
+# Plot heat maps of litigant types - FJC-CL combined data
+plot_resl_heatmap <-  plot_PD_combo_heatmap(
+  df = simp_filt(
+    df = "resl_heatmap",
+    jud = TRUE,
+    disp_drop = NULL,
+    noBP_IMC = TRUE,
+    diag = FALSE
+    ) %>% filter(
+      !is.na(PLT_typ),
+      !is.na(REGION),
+      !is.na(yr_file),
+      !is.na(fjc_id),
+      DISP %in% c(2,3,14,6,7,8,9,17,19,20),
+      !is.na(state.delegation.dime.cfscore)
+      ),
+  yr_start = 1980,
+  yr_end = 2022,
+  l_typs = l_typs,
+  title = "Plaintiff and Defendant Type Combinations - RESL Data (w/o intra-type suits) - District Courts 1980-2022",
+  court_level = "D"
+  )
+
+# plot plt-def distributions in relation
+plot_fjc_cl_judges_nodiag / plot_resl_heatmap +
+  plot_annotation(tag_levels = 'A')  & 
+  theme(plot.tag = element_text(face = "bold"))
+
+# save combo plot 
+ggsave(
+  "PLT-DEF_matrix_compare_fjc_resl.png",
+  units = "mm",
+  width = 180,
+  height =  300,
+  path = "Figures"
+)
+
+
+
+
+# Plot FJC-RESL geographic distribution comparison #####
+
+# Geographic distribution of FJC-CL data with judges - USED FOR ANALYSIS
+plot_dist_resl <- simp_filt(
+  df = "resl_heatmap",
+  jud = TRUE,
+  disp_drop = NULL,
+  noBP_IMC = TRUE,
+  diag = FALSE
+) %>%
+  filter(
+    !is.na(PLT_typ),
+    !is.na(REGION),
+    !is.na(yr_file),
+    !is.na(fjc_id),
+    !is.na(state.delegation.dime.cfscore),
+    DISP %in% c(2,3,14,6,7,8,9,17,19,20)
+  ) %>%
+  mutate(
+    PLT_typ1 = case_when(
+      PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
+      PLT_typ == "BIZ" ~ "Firms and Trade Associations",
+      PLT_typ == "IND" ~ "Individuals",
+      PLT_typ == "FED" ~ "Federal Government",
+      PLT_typ == "STA" ~ "State Government",
+      PLT_typ == "LOC" ~ "Local Government",
+      PLT_typ == "CIVIC" ~ "Civic Association",
+      PLT_typ == "TRIBE" ~ "Tribe",
+      PLT_typ == "NGO_O" ~ "Non-Environmental Non-Proft",
+      PLT_typ == "PUB_ORG" ~ "Public Organizations",
+      TRUE ~ PLT_typ
+    ),
+    PLT_typ2 = case_when(
+      PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
+      PLT_typ == "BIZ" ~ "Firms and Trade Associations",
+      PLT_typ == "IND" ~ "Individuals",
+      PLT_typ == "FED" ~ "Federal Government",
+      PLT_typ == "STA" ~ "State Government",
+      PLT_typ == "LOC" ~ "Local Government",
+      PLT_typ == "CIVIC" ~ "Others",
+      PLT_typ == "TRIBE" ~ "Others",
+      PLT_typ == "NGO_O" ~ "Others",
+      PLT_typ == "PUB_ORG" ~ "Others",
+      TRUE ~ "Others"
+    )
+  )
+
+plot_dist_resl <-  plot_dist_resl %>%
+  mutate(
+    dist_name_flag = case_when(
+      str_detect(Judicial_2,state_name_lower_orlist) == TRUE ~ 1,
+      TRUE ~ 0
+    ),
+    dist_name = case_when(
+      dist_name_flag == 1 ~ Judicial_2,
+      TRUE ~ str_c(Judicial_2,STATE_TERR, sep = " of ")
+    )
+  ) %>%
+  filter(
+    !is.na(dist_name)
+  ) %>%
+  ggplot() +
+  geom_bar(
+    aes(
+      x = reorder(dist_name,dist_name,function(x)-length(x)),
+      group = PLT_typ2,
+      fill = PLT_typ2
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "No. Cases",
+    fill = "Plaitiff Types"
+  ) +
+  #facet_wrap(
+  #  vars(PLT_typ),
+  #  ncol = 2
+  #) +
+  scale_color_viridis_d(option="mako",) +
+  scale_fill_viridis_d(option="mako",) +
+  #guides(colour = "none", fill = "none") +
+  theme_linedraw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# plot plt-def distributions in relation
+plot_dist_fjc_cl_j / plot_dist_resl +
+  plot_annotation(tag_levels = 'A')  & 
+  theme(plot.tag = element_text(face = "bold"))
+
+# save combo plot 
+ggsave(
+  "District_dist_compare_FJC_RESL.png",
+  units = "mm",
+  width = 400,
+  height =  300,
+  path = "Figures"
+)
+
 # Run regressions - FJC / CL data ####
 
 
@@ -1419,7 +1569,7 @@ write_csv(
   file = str_c("regressions/ideology_OR_tables/ideology_OR_fjc_pretty.csv")
 )
 
-# reformat ideology OR tables - RESL ####
+# Reformat ideology OR tables - RESL ####
 resl_OR_table <- read_csv(
   "regressions/ideology_OR_tables/ideology_OR_resl.csv"
 )
