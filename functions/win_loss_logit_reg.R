@@ -9,7 +9,7 @@
 
 # for testing
 # df = "resl"
-# df = "fjc_cl_j"
+# #df = "fjc_cl_j"
 # jud = TRUE
 # disp_drop = NULL
 # noBP_IMC = TRUE
@@ -18,7 +18,7 @@
 # yr_f = 2020
 # party_or_admin = "PARTY"
 # judges = TRUE
-# judge_pv = "del_dime"
+# judge_pv = "jcs_dw"
 # RESL = TRUE
 # name_append = NULL
 # recode_set = NULL
@@ -595,7 +595,7 @@ win_los_reg <- function(
   
   # fit models ####
   
-  # call function fo building tidy results
+  # call function for building tidy results
   source("functions/tidy_reg_results.R")
   
   # call different model depending on whether controlling for prez party
@@ -4526,7 +4526,7 @@ win_los_reg <- function(
   
   # write out just ideology coeff results (as odds ratios)
   # list of judge ideology variable names
-  ideology_vars <- c("Democratic|Republican|DIME Score|JCS Score|President Score|Senate Del|State Del")
+  ideology_vars <- c("Democratic|Republican|DIME Score|JCS Score|President Score|Senate Del|State Del|No. Obs")
   
   # write out assembled judge ideology variables 
   
@@ -4540,6 +4540,8 @@ win_los_reg <- function(
     rowwise() %>%
     mutate(
       var_name_pretty = str_remove(var_name_pretty, " - est"),
+      #format var number of observations row
+      var_name_pretty = str_remove(var_name_pretty, ": "),
       # extract levels of significance from coeff.
       full_sig = str_extract_all(`Full Model`, "\\*{1,3}|†"),
       engo_sig = str_extract_all(`ENGO Plaintiffs`, "\\*{1,3}|†"),
@@ -4550,16 +4552,33 @@ win_los_reg <- function(
       `ENGO Plaintiffs` = str_remove_all(`ENGO Plaintiffs`, "\\*{1,3}|†"),
       `Federal Plaintiffs` = str_remove_all(`Federal Plaintiffs`, "\\*{1,3}|†"),
       `Firm Plaintiffs` = str_remove_all(`Firm Plaintiffs`, "\\*{1,3}|†"),
+      # remove commas
+      `Full Model` = str_remove_all(`Full Model`, ","),
+      `ENGO Plaintiffs` = str_remove_all(`ENGO Plaintiffs`, ","),
+      `Federal Plaintiffs` = str_remove_all(`Federal Plaintiffs`, ","),
+      `Firm Plaintiffs` = str_remove_all(`Firm Plaintiffs`, ","),
       # now make vars numeric
       `Full Model` = as.numeric(`Full Model`),
       `ENGO Plaintiffs` = as.numeric(`ENGO Plaintiffs`),
       `Federal Plaintiffs` = as.numeric(`Federal Plaintiffs`),
       `Firm Plaintiffs` = as.numeric(`Firm Plaintiffs`),
       # now exponentiate (for odds ratios)
-      `Full Model` = round(exp(`Full Model`),4),
-      `ENGO Plaintiffs` = round(exp(`ENGO Plaintiffs`),4),
-      `Federal Plaintiffs` = round(exp(`Federal Plaintiffs`),4),
-      `Firm Plaintiffs` = round(exp(`Firm Plaintiffs`),4),
+      `Full Model` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ `Full Model`,
+        TRUE ~ round(exp(`Full Model`),4)
+        ),
+      `ENGO Plaintiffs` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ `ENGO Plaintiffs`,
+        TRUE ~ round(exp(`ENGO Plaintiffs`),4)
+        ),
+      `Federal Plaintiffs` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ `Federal Plaintiffs`,
+        TRUE ~ round(exp(`Federal Plaintiffs`),4)
+        ),
+      `Firm Plaintiffs` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ `Firm Plaintiffs`,
+        TRUE ~ round(exp(`Firm Plaintiffs`),4)
+        ),
       # get rid of character(0) values introduced above (turn them into NAs)
       full_sig = ifelse(
         length(full_sig) == 0, NA, full_sig
@@ -4590,11 +4609,23 @@ win_los_reg <- function(
         is.na(biz_sig) ~ "",
         TRUE ~ biz_sig
       ),
-      # now bring significance indicators back
-      `Full Model` = str_c(`Full Model`,full_sig),
-      `ENGO Plaintiffs` = str_c(`ENGO Plaintiffs`,engo_sig),
-      `Federal Plaintiffs` = str_c(`Federal Plaintiffs`,fed_sig),
-      `Firm Plaintiffs` = str_c(`Firm Plaintiffs`, biz_sig)
+      # now bring significance indicators back; format n values in pretty way
+      `Full Model` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ str_c("(", format(`Full Model`, big.mark = ","), ")"),
+        TRUE ~ str_c(`Full Model`,full_sig)
+      ),
+      `ENGO Plaintiffs` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ str_c("(", format(`ENGO Plaintiffs`, big.mark = ","), ")"),
+        TRUE ~ str_c(`ENGO Plaintiffs`,engo_sig)
+      ),
+      `Federal Plaintiffs` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ str_c("(", format(`Federal Plaintiffs`, big.mark = ","), ")"),
+        TRUE ~ str_c(`Federal Plaintiffs`,fed_sig)
+      ),
+      `Firm Plaintiffs` = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ str_c("(", format(`Firm Plaintiffs`, big.mark = ","), ")"),
+        TRUE ~ str_c(`Firm Plaintiffs`,biz_sig)
+      )
     ) %>%
     # drop significance columns
     select(
@@ -4612,12 +4643,21 @@ win_los_reg <- function(
             # now remove signifiers of significance
             `Conservation Conflicts` = str_remove_all(`Conservation Conflicts`, "\\*{1,3}|†"),
             `Waste and Pollution Conflicts` = str_remove_all(`Waste and Pollution Conflicts`, "\\*{1,3}|†"),
+            # now remove commas
+            `Conservation Conflicts` = str_remove_all(`Conservation Conflicts`, ","),
+            `Waste and Pollution Conflicts` = str_remove_all(`Waste and Pollution Conflicts`, ","),
             # now make vars numeric
             `Conservation Conflicts` = as.numeric(`Conservation Conflicts`),
             `Waste and Pollution Conflicts` = as.numeric(`Waste and Pollution Conflicts`),
             # now exponentiate (for odds ratios)
-            `Conservation Conflicts` = round(exp(`Conservation Conflicts`),4),
-            `Waste and Pollution Conflicts` = round(exp(`Waste and Pollution Conflicts`),4),
+            `Conservation Conflicts` = case_when(
+              str_detect(var_name_pretty, "No\\. Obs\\.") ~ `Conservation Conflicts`,
+              TRUE ~ round(exp(`Conservation Conflicts`),4)
+              ),
+            `Waste and Pollution Conflicts` = case_when(
+              str_detect(var_name_pretty, "No\\. Obs\\.") ~ `Waste and Pollution Conflicts`,
+              TRUE ~ round(exp(`Waste and Pollution Conflicts`),4)
+            ),
             # get rid of character(0) values introduced above (turn them into NAs)
             con_sig = ifelse(
               length(con_sig) == 0, NA, con_sig
@@ -4634,9 +4674,15 @@ win_los_reg <- function(
               is.na(wp_sig) ~ "",
               TRUE ~ wp_sig
             ),
-            # now bring significance indicators back
-            `Conservation Conflicts` = str_c(`Conservation Conflicts`,con_sig),
-            `Waste and Pollution Conflicts` = str_c(`Waste and Pollution Conflicts`,wp_sig)
+            # add in commas and parentheses to n values; bring significance indicators back to coefficients
+            `Conservation Conflicts` = case_when(
+              str_detect(var_name_pretty, "No\\. Obs\\.") ~ str_c("(", format(`Conservation Conflicts`, big.mark = ","), ")"),
+              TRUE ~ str_c(`Conservation Conflicts`,con_sig)
+            ),
+            `Waste and Pollution Conflicts` = case_when(
+              str_detect(var_name_pretty, "No\\. Obs\\.") ~ str_c("(", format(`Waste and Pollution Conflicts`, big.mark = ","), ")"),
+              TRUE ~ str_c(`Waste and Pollution Conflicts`,wp_sig)
+            )
           ) %>%
           # drop significance columns
           select(
@@ -4648,9 +4694,17 @@ win_los_reg <- function(
         .
       }
     } %>%
+    # add ideology variable column; change "No. Obs." to "(No. Obs.)
+    mutate(
+      ideology_var = judge_pv,
+      var_name_pretty = case_when(
+        str_detect(var_name_pretty, "No\\. Obs\\.") ~ "(No. Obs.)",
+        TRUE ~ var_name_pretty
+      )
+    ) %>% 
     rename(
       "Indicator of Judicial Ideology" = "var_name_pretty"
-    )
+    ) 
   
   # for first ideology variable in list (DIME score of ruling judge), create
   # new csv file. for subsequent variables, append to this file.

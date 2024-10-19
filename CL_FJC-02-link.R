@@ -425,6 +425,7 @@ cl_e_clean_j <- cl_e_clean_j %>%
     id,
     join_id,
     case_name,
+    court_id,
     #assigned_to_str,
     assigned_to_id,
     fjc_id,
@@ -433,7 +434,7 @@ cl_e_clean_j <- cl_e_clean_j %>%
     name_first:plt_fl
     )
 
-# Read in Bonica and Sen Judicial Ideology Data; join to CL data ####
+# Read in Bonica and Sen Judicial Ideology Data ######
 
 b_s <- read_csv(
   "raw data for matching/bonica_sen_fed_judges.csv"
@@ -454,6 +455,8 @@ b_s <- read_csv(
    president.name,
    court.type,
    court.name,
+   nomination.date.senate.executive.journal,
+   enter.year,
    dime.cid,
    dime.cfscore,
    imputed.dime.cfscore,
@@ -476,8 +479,12 @@ b_s <- read_csv(
     fjc_id
   ) %>%
   mutate(
+    # make nomination date a date
+    nomination.date.senate.executive.journal = mdy(nomination.date.senate.executive.journal),
     n = n(),
-    row_n = row_number()
+    row_n = row_number(),
+    # make data_source variable
+    data_source = "b_s"
   ) %>%
   filter(
     row_n == 1
@@ -487,12 +494,465 @@ b_s <- read_csv(
   ) %>%
   ungroup()
 
+# note: although the b-s data technically go to 2016, they are effectively
+# truncated after 2014, with only a handful of judges appointed in 2015 and none
+# in 2016. We keep these data and use the "data_source" variable to flag were
+# they came from, retaining these observations over the supplementary ones below
+# where there are overlaps.
+
+# Read in and join later-date supplementary DIME (and prez party) judicial ideology scores ####
+
+# the b_s data above ends in 2014, which means that we lack ideology scores for
+# any judges appointed at the end of the Obama administration and all of the
+# Trump and Biden administrations after. The data below add more recent ideology
+# data for some indicators from some years.
+
+# read in s_b DIME score updates
+s_b <- read_csv(
+  "data/supplemental_judicial_ideology/fjc_jep.csv"
+) %>%
+  # keep only post-2016 appointments to District Courts
+  # note: note 100% the b_s
+  filter(
+    enter.year >= 2014, # we allow for one year of overlap between b_s and s_b data
+    court.type == "USDC"
+  ) %>%
+  # make judge ID var name compatible with fjc data
+  rename(
+    "fjc_id" = "fjc.judge.idno",
+    # rename "dime.score" to "dime.cfscore" for compatibility with b_s data;
+    # same with following variable names
+    "dime.cfscore" = "dime.score",
+    "president.name" = "pres"
+  ) %>%
+  mutate(
+    data_source = "s_b",
+    # make imputed.dime.cfscore the same as dime.cfscore, since this is the
+    # variable we use for analysis.
+    imputed.dime.cfscore = dime.cfscore
+  ) %>%
+  # drop variables not retained in b_s data
+  select(
+    -c(exit.year)
+  )
+
+# append supplementary data to original b_s data; look for duplicates; keep
+# older data (b_s) in favor of newer data (s_b) where there are overlaps/ this
+# grows the data set from 1799 observations (the original b_s data set) to 1948
+# observations - an increase of 149 judges. Most of these - 136 - are Trump
+# appointees.
+b_s <- bind_rows(
+  b_s,
+  s_b
+) %>%
+  group_by(
+    fjc_id
+  ) %>%
+  mutate(
+    n = n()
+  ) %>%
+  filter(
+    n == 1 |
+      (n == 2 & data_source == "b_s")
+  ) %>%
+  # drop counting column
+  select(
+    -n
+  )
+
+
+# Read in Boyd JCS DW Nominate scores (through 2022) and join as well #### 
+
+# The Boyd data use nid, not the jid (which we use, above) to link across data
+# sources. So, we have to read in the U.S. federal judges data course to
+# cross-walk between Boyd's data and the other data sources we call on. This
+# data also includes a range of other variables not in Boyd's data that are
+# useful (gender, race, appointing president, etc.).
+
+# read in US judges data.
+us_judges <- read_csv(
+  "raw data for matching/US_Federal_Judges.csv"
+)
+
+# read in Boyd data
+boyd <- read_csv(
+  "data/supplemental_judicial_ideology/Boyd-district-court-ideology-scores-through-117th-Cong-Feb2023.csv"
+  #"data/supplemental_judicial_ideology/Boyd-district-court-ideology-scores-through-117th-Cong-Feb2023_GPT_names_parsed.csv"
+) %>%
+  rename(
+    "judgename_boyd" = "judgename",
+    "ideology_score_boyd" = "ideology_score",
+    "district1_boyd" = "district1",
+    "district2_boyd" = "district2",
+    "district3_boyd" = "district3"
+  ) %>%
+  mutate(
+    data_source_boyd = "boyd"
+  )
+
+# join the boyd data to the U.S. Judges data. Note here that we (re)name the
+# joined data frame "boyd", but in fact we are left joining boyd to the U.S.
+# courts data.
+
+boyd <- left_join(
+  us_judges,
+  boyd,
+  by = "nid"
+) %>%
+  # keep only observations that boyd has data for
+  filter(
+    !is.na(data_source_boyd)
+  ) %>%
+  # retain important observations
+  select(
+    nid,
+    jid,
+    `Birth Year`,
+    Gender,
+    `Race or Ethnicity`,
+    `Appointing President (1)`,
+    `Party of Appointing President (1)`,
+    `Nomination Date (1)`,
+    `Commission Date (1)`,
+    judgename_boyd,
+    ideology_score_boyd,
+    data_source_boyd
+  ) %>%
+  # rename jid as fjc_id
+  rename(
+    "fjc_id" = "jid",
+    "birth.year.boyd" = "Birth Year",
+    "race.or.ethnicity.boyd" = "Race or Ethnicity",
+    "president.name.boyd" = "Appointing President (1)",
+    "party.affiliation.of.president.boyd" = "Party of Appointing President (1)",
+    "jcs.score.dw.boyd" = "ideology_score_boyd",
+    "nomination.date.boyd" = "Nomination Date (1)",
+    "enter.year.boyd" = "Commission Date (1)"
+  ) %>%
+  # make commission date into enter.year
+  mutate(
+    enter.year.boyd = mdy(enter.year.boyd),
+    enter.year.boyd = year(enter.year.boyd),
+    birth.year.boyd = as.numeric(birth.year.boyd),
+    nomination.date.boyd = mdy(nomination.date.boyd)
+  )
+
+# the Boyd data includes both judges already in the b_s (And supplemented s_b)
+# data, as well as later appointments not included in either (up through 2022).
+# Thus, we use a full join between the data sets, to capture all of the Boyd
+# data and compare it to the b_s data. Where there is overlap, we retain the b_s
+# data. Where there is not, we bring the Boyd data into the b_s data.
+
+b_s <- full_join(
+  b_s,
+  boyd,
+  by = "fjc_id"
+) %>%
+  # order data for ease of comparison
+  select(
+    fjc_id,
+    judge.first.name,
+    judge.middle.name,
+    judge.last.name,
+    judgename_boyd,
+    suffix,
+    party.affiliation.of.president,
+    party.affiliation.of.president.boyd,
+    president.name,
+    president.name.boyd,
+    court.type,
+    court.name,
+    nomination.date.senate.executive.journal,
+    nomination.date.boyd,
+    enter.year,
+    enter.year.boyd,
+    dime.cid,
+    dime.cfscore,
+    imputed.dime.cfscore,
+    jcs.score.dw,
+    jcs.score.dw.boyd,
+    jcs.cfscore.cf,
+    pres.dw,
+    pres.dime.cfscore,
+    senscore.dw,
+    senscore.dime.cfscore,
+    state.delegation.dw,
+    state.delegation.dime.cfscore,
+    birth.year,
+    birth.year.boyd,
+    race.or.ethnicity,
+    race.or.ethnicity.boyd,
+    jd.rank,
+    clerked.for.con,
+    clerked.for.lib,
+    data_source,
+    data_source_boyd
+  ) %>%
+  mutate(
+    overlap = case_when(
+      !is.na(data_source) & !is.na(data_source_boyd) ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+# remove unecessary dfs
+rm(
+  boyd,
+  us_judges,
+  s_b
+)
+
+# where Boyd data is present and other b_s or s_b data is not, use Boyd
+# scores/info (some of which comes from U.S. Courts). Then drop "boyd" columns
+
+b_s <- b_s %>%
+  mutate(
+    jcs.score.dw = case_when(
+      is.na(jcs.score.dw) & !is.na(jcs.score.dw.boyd) ~ jcs.score.dw.boyd,
+      TRUE ~ jcs.score.dw
+    ),
+    race.or.ethnicity = case_when(
+      is.na(race.or.ethnicity) & !is.na(race.or.ethnicity.boyd) ~ race.or.ethnicity.boyd,
+      TRUE ~ race.or.ethnicity
+    ),
+    birth.year = case_when(
+      is.na(birth.year) & !is.na(birth.year.boyd) ~ birth.year.boyd,
+      TRUE ~ birth.year
+    ),
+    nomination.date.senate.executive.journal = case_when(
+      is.na(nomination.date.senate.executive.journal) & !is.na(nomination.date.boyd) ~ nomination.date.boyd,
+      TRUE ~ nomination.date.senate.executive.journal
+    ),
+    enter.year = case_when(
+      is.na(enter.year) & !is.na(enter.year.boyd) ~ enter.year.boyd,
+      TRUE ~ enter.year
+    )
+  ) %>%
+  select(
+    -contains("boyd"),
+    -overlap
+  )
+
+
+# Plot judicial ideology (DIME) scores by president ####
+
+# make plot df
+plot_df_dime <- b_s %>%
+  # nominating presidents
+  filter(
+    president.name %in% c(
+      "Donald J. Trump",
+      "George W. Bush",
+      "Ronald Reagan",
+      "George H.W. Bush",
+      "William J. Clinton",
+      "Jimmy Carter",
+      "Barack Obama",
+      "Richard M. Nixon"
+    )
+  ) %>%
+  ungroup() %>%
+  # select relevant variables
+  select(
+    president.name, party.affiliation.of.president, imputed.dime.cfscore,jcs.score.dw
+  ) %>%
+  # first, count number of appointments by president; make prez name with n
+  group_by(
+    president.name
+  ) %>%
+  mutate(
+    appt_n = n(),
+    prez_name_n = str_c(president.name, " (n = ", appt_n, ")")
+  ) %>%
+  ungroup() %>%
+  pivot_longer(
+    cols = c(imputed.dime.cfscore,jcs.score.dw),
+    names_to = "ideology_var",
+    values_to = "ideology_score"
+  ) %>%
+  filter(
+    !is.na(party.affiliation.of.president),
+    ideology_var == "imputed.dime.cfscore"
+  ) %>%
+  # calculate average and mdeia ideology scores by president
+  group_by(
+    president.name, ideology_var
+  ) %>%
+  mutate(
+    mean_score = mean(ideology_score, na.rm = T),
+    med_score = median(ideology_score, na.rm = T)
+  )
+
+# make factor levels and labels
+lev_lab <- plot_df_dime %>%
+  ungroup() %>%
+  select(
+    prez_name_n, med_score
+  ) %>%
+  group_by(
+    prez_name_n
+  ) %>%
+  filter(
+    row_number() == 1
+  ) %>%
+  ungroup() %>%
+  arrange(
+    med_score
+  )
+
+f_labs <- lev_lab$prez_name_n
+f_levs <- lev_lab$med_score
+  
+# plot ideology of appointments plot 
+plot_dime <- plot_df_dime %>%
+  mutate(
+    prez_name_n_f = factor(
+      med_score,
+      levels = f_levs,
+      labels = f_labs
+    )
+  ) %>%
+  ggplot(
+    aes(
+      y = prez_name_n_f,
+      x = ideology_score,
+      color = med_score
+    )
+  ) +
+  scale_color_viridis() +
+  labs(
+    y = "President",
+    x = "Judicial Ideology\n-  <-- liberal     conservative -->  +",
+    color = "Median Judge Ideology"
+    ) +
+  geom_boxplot() +
+  facet_wrap(
+    vars(ideology_var)
+  ) +
+  theme_linedraw()
+
+# Plot judicial ideology (DW) scores by president ####
+
+# make plot df
+plot_df_dw <- b_s %>%
+  # nominating presidents
+  filter(
+    president.name %in% c(
+      "Donald J. Trump",
+      "George W. Bush",
+      "Ronald Reagan",
+      "George H.W. Bush",
+      "William J. Clinton",
+      "Jimmy Carter",
+      "Barack Obama",
+      "Richard M. Nixon"
+    )
+  ) %>%
+  ungroup() %>%
+  # select relevant variables
+  select(
+    president.name, party.affiliation.of.president, imputed.dime.cfscore,jcs.score.dw
+  ) %>%
+  # first, count number of appointments by president; make prez name with n
+  group_by(
+    president.name
+  ) %>%
+  mutate(
+    appt_n = n(),
+    prez_name_n = str_c(president.name, " (n = ", appt_n, ")")
+  ) %>%
+  ungroup() %>%
+  pivot_longer(
+    cols = c(imputed.dime.cfscore,jcs.score.dw),
+    names_to = "ideology_var",
+    values_to = "ideology_score"
+  ) %>%
+  filter(
+    !is.na(party.affiliation.of.president),
+    ideology_var == "jcs.score.dw"
+  ) %>%
+  # calculate average and mdeia ideology scores by president
+  group_by(
+    president.name, ideology_var
+  ) %>%
+  mutate(
+    mean_score = mean(ideology_score, na.rm = T),
+    med_score = median(ideology_score, na.rm = T)
+  )
+
+# make factor levels and labels
+lev_lab <- plot_df_dw %>%
+  ungroup() %>%
+  select(
+    prez_name_n, med_score
+  ) %>%
+  group_by(
+    prez_name_n
+  ) %>%
+  filter(
+    row_number() == 1
+  ) %>%
+  ungroup() %>%
+  arrange(
+    med_score
+  )
+
+f_labs <- lev_lab$prez_name_n
+f_levs <- lev_lab$med_score
+
+# plot ideology of appointments plot 
+plot_dw <- plot_df_dw %>%
+  mutate(
+    prez_name_n_f = factor(
+      med_score,
+      levels = f_levs,
+      labels = f_labs
+    )
+  ) %>%
+  ggplot(
+    aes(
+      y = prez_name_n_f,
+      x = ideology_score,
+      color = med_score
+    )
+  ) +
+  scale_color_viridis() +
+  labs(
+    y = "President",
+    x = "Judicial Ideology\n-  <-- liberal     conservative -->  +",
+    color = "Median Judge Ideology"
+  ) +
+  geom_boxplot() +
+  facet_wrap(
+    vars(ideology_var)
+  ) +
+  theme_linedraw()
+
+# Plot judicial both ideology (DIME and DW) scores; write out DIME ####
+
+plot_dw | plot_dime +
+  plot_annotation(tag_levels = 'A')  & 
+  theme(plot.tag = element_text(face = "bold"))
+
+plot_dime
+
+ggsave(
+  "Prez_appointment_ideology.png",
+  units = "mm",
+  width = 250,
+  height =  200,
+  path = "Figures"
+)
+
+# Join judicial ideology data to CL data ####
+
 # join Bonica and Sen data to Court Listener data
 cl_e_clean_j <- left_join(
   cl_e_clean_j,
   b_s,
   by = "fjc_id"
-)
+  )
+
 
 # examine matched data
 check <- cl_e_clean_j %>%
@@ -500,6 +960,7 @@ check <- cl_e_clean_j %>%
     case_name,
     assigned_to_id,
     fjc_id,
+    yr_file,
     name_first,
     name_middle,
     name_last,
@@ -1426,7 +1887,7 @@ lapply(
   noBP_IMC = TRUE,
   diag = FALSE,
   yr_i = 1980,
-  yr_f = 2020,
+  yr_f = 2022,
   party_or_admin = "PARTY",
   judges = TRUE,
   RESL = FALSE
@@ -1451,7 +1912,7 @@ lapply(
   noBP_IMC = TRUE,
   diag = FALSE,
   yr_i = 1980,
-  yr_f = 2020,
+  yr_f = 2022,
   party_or_admin = "PARTY",
   judges = TRUE,
   RESL = TRUE
@@ -1465,7 +1926,7 @@ fjc_OR_table <- read_csv(
 # ideology of ruling judge
 jud_chunk <- fjc_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "DIME|JCS")
+    ideology_var == "dime" | ideology_var == "jcs_dw" | ideology_var == "jcs_cf"
   )
 jud_head <- jud_chunk %>%
   select(
@@ -1481,7 +1942,7 @@ jud_head <- jud_chunk %>%
 # ideology of president
 prez_chunk <- fjc_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "Republican|President")
+    ideology_var == "prez_party" | ideology_var == "prez_dw" | ideology_var == "prez_dime"
   )
 prez_head <- prez_chunk %>%
   select(
@@ -1497,7 +1958,7 @@ prez_head <- prez_chunk %>%
 # ideology of senators
 sen_chunk <- fjc_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "Senate")
+    ideology_var == "sen_dw" | ideology_var == "sen_dime" 
   )
 sen_head <- sen_chunk %>%
   select(
@@ -1513,7 +1974,7 @@ sen_head <- sen_chunk %>%
 # ideology of state del
 del_chunk <- fjc_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "State")
+    ideology_var == "del_dw" | ideology_var == "del_dime"
   )
 del_head <- del_chunk %>%
   select(
@@ -1561,6 +2022,10 @@ fjc_OR_table <- fjc_OR_table %>%
       is.na(`Firm Plaintiffs`) ~ "",
       TRUE ~ `Firm Plaintiffs`
       )
+  ) %>%
+  # drop ideology_var
+  select(
+    -ideology_var
   )
 
 
@@ -1577,7 +2042,7 @@ resl_OR_table <- read_csv(
 # ideology of ruling judge
 jud_chunk <- resl_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "DIME|JCS")
+    ideology_var == "dime" | ideology_var == "jcs_dw" | ideology_var == "jcs_cf"
   )
 jud_head <- jud_chunk %>%
   select(
@@ -1593,7 +2058,7 @@ jud_head <- jud_chunk %>%
 # ideology of president
 prez_chunk <- resl_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "Republican|President")
+    ideology_var == "prez_party" | ideology_var == "prez_dw" | ideology_var == "prez_dime"
   )
 prez_head <- prez_chunk %>%
   select(
@@ -1609,7 +2074,7 @@ prez_head <- prez_chunk %>%
 # ideology of senators
 sen_chunk <- resl_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "Senate")
+    ideology_var == "sen_dw" | ideology_var == "sen_dime"
   )
 sen_head <- sen_chunk %>%
   select(
@@ -1625,7 +2090,7 @@ sen_head <- sen_chunk %>%
 # ideology of state del
 del_chunk <- resl_OR_table %>%
   filter(
-    str_detect(`Indicator of Judicial Ideology`, "State")
+    ideology_var == "del_dw" | ideology_var == "del_dime"
   )
 del_head <- del_chunk %>%
   select(
@@ -1683,6 +2148,10 @@ resl_OR_table <- resl_OR_table %>%
       is.na(`Waste and Pollution Conflicts`) ~ "",
       TRUE ~ `Waste and Pollution Conflicts`
     )
+  ) %>%
+  # drop ideology_var
+  select(
+    -ideology_var
   )
 
 write_csv(
