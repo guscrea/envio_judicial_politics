@@ -3,6 +3,7 @@
 # Script by Chris Rea
 
 library(tidyverse)
+library(tidytext)
 library(patchwork)
 library(viridis)
 library(broom) # for tidying regression results
@@ -17,12 +18,14 @@ library(lubridate)
 
 # read in cl environmentally-focused docket data
 cl_e <- read_csv(
-  "/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/NOS_893_dockets-2024-08-31.csv"
+  #"/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/NOS_893_dockets-2024-08-31.csv"
+  "/Users/chrisrea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/NOS_893_dockets-2024-08-31.csv"
 )
 
 # read in cl court data
 cl_court <- read_csv(
-  "/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/courts-2024-08-31.csv",
+  #"/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/courts-2024-08-31.csv",
+  "/Users/chrisrea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/courts-2024-08-31.csv",
   quote = "`"
 ) %>%
   rename(
@@ -36,7 +39,8 @@ cl_court <- read_csv(
 
 # read in cl people - people data
 cl_people_peo <- read_csv(
-  "/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/people-db-people-2024-08-31.csv",
+  #"/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/people-db-people-2024-08-31.csv",
+  "/Users/chrisrea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/people-db-people-2024-08-31.csv",
   quote = "`"
   ) %>%
   # check for duplicates
@@ -51,7 +55,8 @@ cl_people_peo <- read_csv(
 
 # read in cl people - political affiliation data
 cl_people_pol <- read_csv(
-  "/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/people-db-political-affiliations-2024-08-31.csv",
+  #"/Users/crea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/people-db-political-affiliations-2024-08-31.csv",
+  "/Users/chrisrea/Dropbox\ (Personal)/Professional/Research/_Basic_Data/US_Legal_Data/court_listener/people-db-political-affiliations-2024-08-31.csv",
   quote = "`"
   )
 
@@ -1013,7 +1018,9 @@ cl_e_clean_j <- cl_e_clean_j %>%
 
 # read in cleaned fjc_idb data; drop BP and IMC cases
 fjc_e <- read_csv(
-  "/Users/crea/Dropbox\ (Personal)/Professional/Research/_RESL/Environmental_Law_Research/Nature_Sustainability_2024/Data/FJC_postprocessed/District/fjc_e_post_processed_clean.csv"
+  #"/Users/crea/Dropbox\ (Personal)/Professional/Research/_RESL/Environmental_Law_Research/Nature_Sustainability_2024/Data/FJC_postprocessed/District/fjc_e_post_processed_clean.csv"
+  "/Users/chrisrea/Dropbox\ (Personal)/Professional/Research/_RESL/Environmental_Law_Research/Nature_Sustainability_2024/Data/FJC_postprocessed/District/fjc_e_post_processed_clean.csv"
+  
   ) %>%
   filter(
     !(DISTRICT == "3L" & (str_detect(PLT,"BP")==T | str_detect(DEF,"BP")==T)), # drop BP cases in LA
@@ -1630,6 +1637,94 @@ resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
   ) %>%
   rowwise() %>%
   mutate(
+    # capture old PLT_typ and DEF_typ with multiple types (for use later)
+    PLT_typ_all = PLT_typ,
+    DEF_typ_all = DEF_typ,
+    # simplify and standardize lists of plaintiff type and defendnat types
+    PLT_typ_all = str_replace_all(PLT_typ_all, "fed", "FED"),
+    PLT_typ_all = str_replace_all(PLT_typ_all, "ngo", "NGO"),
+    PLT_typ_all = str_replace_all(PLT_typ_all, "individual", "IND"),
+    PLT_typ_all = str_replace_all(PLT_typ_all, "state", "STA"),
+    PLT_typ_all = str_replace_all(PLT_typ_all, "industry", "BIZ"),
+    PLT_typ_all = str_replace_all(PLT_typ_all, "trade_assn", "BIZ"),
+    PLT_typ_all = str_replace_all(PLT_typ_all, "local", "LOC"),
+    PLT_typ_all = str_replace_all(PLT_typ_all, "public_org", "LOC"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "fed", "FED"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "ngo", "NGO"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "individual", "IND"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "state", "STA"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "industry", "BIZ"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "trade_assn", "BIZ"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "local", "LOC"),
+    DEF_typ_all = str_replace_all(DEF_typ_all, "public_org", "LOC"),
+    # create binary variables for different plaintiff types
+    PLT_typ_IND = case_when(
+      str_detect(PLT_typ_all,"IND") ~ 1,
+      TRUE ~ 0
+    ),
+    PLT_typ_STA = case_when(
+      str_detect(PLT_typ_all,"STA") ~ 1,
+      TRUE ~ 0
+    ),
+    PLT_typ_BIZ = case_when(
+      str_detect(PLT_typ_all,"BIZ") ~ 1,
+      TRUE ~ 0
+    ),
+    PLT_typ_NGO = case_when(
+      str_detect(PLT_typ_all,"NGO") ~ 1,
+      TRUE ~ 0
+    ),
+    PLT_typ_FED = case_when(
+      str_detect(PLT_typ_all,"FED") ~ 1,
+      TRUE ~ 0
+    ),
+    PLT_typ_LOC = case_when(
+      str_detect(PLT_typ_all,"LOC") ~ 1,
+      TRUE ~ 0
+    ),
+    PLT_typ_OTH = case_when(
+      (PLT_typ_IND == 0 &
+        PLT_typ_STA == 0 &
+        PLT_typ_BIZ == 0 &
+        PLT_typ_NGO == 0 &
+        PLT_typ_LOC == 0 &
+        PLT_typ_FED == 0) ~ 1,
+      TRUE ~ 0
+    ),
+    # create binary variables for different defendant types
+    DEF_typ_IND = case_when(
+      str_detect(DEF_typ_all,"IND") ~ 1,
+      TRUE ~ 0
+    ),
+    DEF_typ_STA = case_when(
+      str_detect(DEF_typ_all,"STA") ~ 1,
+      TRUE ~ 0
+    ),
+    DEF_typ_BIZ = case_when(
+      str_detect(DEF_typ_all,"BIZ") ~ 1,
+      TRUE ~ 0
+    ),
+    DEF_typ_NGO = case_when(
+      str_detect(DEF_typ_all,"NGO") ~ 1,
+      TRUE ~ 0
+    ),
+    DEF_typ_FED = case_when(
+      str_detect(DEF_typ_all,"FED") ~ 1,
+      TRUE ~ 0
+    ),
+    DEF_typ_LOC = case_when(
+      str_detect(DEF_typ_all,"LOC") ~ 1,
+      TRUE ~ 0
+    ),
+    DEF_typ_OTH = case_when(
+      (DEF_typ_IND == 0 &
+         DEF_typ_STA == 0 &
+         DEF_typ_BIZ == 0 &
+         DEF_typ_NGO == 0 &
+         DEF_typ_LOC == 0 &
+         DEF_typ_FED == 0) ~ 1,
+      TRUE ~ 0
+    ),
     # transform PLT_typ and DEF_typ into just the leading plaintiff/def type
     # as specified in FJC data
     PLT_typ = str_split(PLT_typ, "%"),
@@ -1698,6 +1793,24 @@ resl <- read.csv("final data after matching/perf_match_one_distinct.csv") %>%
     ooc_mc1 = str_to_title(ooc_mc1),
     ooc_mc1 = as.factor(ooc_mc1)
   )
+
+# make sure that PLT_typ_X variables are being appropriately recoded.
+# test <- resl %>%
+#   select(
+#     ID,
+#     case_name,
+#     PLT,
+#     PLT_typ,
+#     PLT_typ_all,
+#     PLT_typ_IND,
+#     PLT_typ_STA,
+#     PLT_typ_BIZ,
+#     PLT_typ_NGO,
+#     PLT_typ_FED,
+#     PLT_typ_LOC,
+#     PLT_typ_OTH
+#   )
+
 # Plot FJC-RESL heatmap comparison ######
 
 # prep RESL data for heatmap function
@@ -1902,6 +2015,8 @@ source("functions/win_loss_logit_reg.R")
 # loop through each judge_pv var with win_loss_reg 
 judge_pv_list <- c("dime", "jcs_dw", "jcs_cf", "prez_party", "prez_dw",
                    "prez_dime", "sen_dw", "sen_dime", "del_dw", "del_dime")
+
+# resl data of just ENGOs
 
 lapply(
   judge_pv_list,
@@ -2159,3 +2274,720 @@ write_csv(
   file = str_c("regressions/ideology_OR_tables/ideology_OR_resl_pretty.csv")
 )
 
+# plot count of cases by substantive focus by plaintiff type in RESL data ####
+
+  resl %>%
+    ungroup() %>%
+    pivot_longer(
+      cols = PLT_typ_IND:PLT_typ_OTH,
+      names_to = "PLT_typ2",
+      values_to = "PLT_typ_indicator",
+      names_prefix = "PLT_typ_",
+      values_drop_na = TRUE
+    ) %>%
+    filter(
+      PLT_typ_indicator ==1
+    ) %>%
+    #select(
+    #  ID, case_name,PLT_typ2, PLT_typ_indicator
+    #) %>%
+    mutate(
+      PLT_typ2 = case_when(
+        PLT_typ == "CIVIC" ~ "Other",
+        PLT_typ == "TRIBE" ~ "Other",
+        PLT_typ == "NGO_O" ~ "Other",
+        PLT_typ == "PUB_ORG" ~ "Other",
+        PLT_typ == "NGO" ~ "Environmental Advocacy Groups",
+        PLT_typ == "BIZ" ~ "Firms and Trade Associations",
+        PLT_typ == "IND" ~ "Individuals",
+        PLT_typ == "FED" ~ "Federal Government",
+        PLT_typ == "STA" ~ "State Government",
+        PLT_typ == "LOC" ~ "Local Government",
+        TRUE ~ "Other"
+      ),
+      PLT_typ2 = factor(PLT_typ2)
+    ) %>%
+    group_by(
+      PLT_typ2
+    ) %>%
+    mutate(
+      tot = n()
+    ) %>%
+    group_by(
+      PLT_typ2, ooc_mc1
+    ) %>%
+    mutate(
+      n = n(),
+      pct = str_c(round(n/tot*100,1),"%"),
+    ) %>%
+    filter(
+      row_number() == 1
+    ) %>%
+    ungroup() %>%
+    ggplot(
+      aes(
+        x = ooc_mc1,
+        y = n,
+        group = ooc_mc1,
+        fill = ooc_mc1
+      )
+    ) +
+    geom_bar(
+      stat = "identity"
+    ) + 
+    geom_text(
+      aes(
+        label = pct
+      ),
+      hjust = .5,
+      vjust = -0.2
+    ) +
+    scale_fill_viridis_d() + 
+    labs(
+      x = "Substantive Focus of Legal Conflict"
+    ) +
+    facet_wrap(
+      vars(PLT_typ2)
+    ) +
+    guides(
+      fill = "none"
+    ) +
+    theme_linedraw() + 
+    theme(
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+    ) +
+    coord_cartesian(
+      ylim = c(0,900)
+    )
+  
+  ggsave(
+    str_c("case_focus_by_plaintiff_type.png"),
+    plot = last_plot(),
+    width = 10,
+    height = 7,
+    path = "figures"
+  )
+
+# write out random sample of conservation-focused cases and waste and pollution-focused cases
+
+set.seed(1234)
+
+# conservation cases
+resl %>%
+  mutate(
+    n_rand = runif(n =3937, max = 1000)
+  ) %>%
+  filter(
+    ooc_mc1 == "Conservation",
+    n_rand <= 160
+  ) %>%
+  mutate(
+    n = row_number()
+  ) %>%
+  write_csv(
+    "data/decisions_to_investigate/random_resl_cons_decisions.csv"
+  )
+
+set.seed(1234)
+# waste and pollution casess
+resl %>%
+  mutate(
+    n_rand = runif(n =3937, max = 1000)
+  ) %>%
+  filter(
+    ooc_mc1 == "Waste & Pollution",
+    n_rand <= 112.5
+  ) %>%
+  mutate(
+    n = row_number()
+  ) %>%
+  write_csv(
+    "data/decisions_to_investigate/random_resl_waste_pol_decisions.csv"
+  )
+
+set.seed(1234)
+# waste and pollution (non-conservation) brought by ENGOs
+resl %>%
+  mutate(
+    n_rand = runif(n =3937, max = 1000)
+  ) %>%
+  filter(
+    #ooc_mc1 == "Waste & Pollution",
+    ooc_mc1 != "Conservation",
+    PLT_typ_NGO == 1,
+    #n_rand <= 112.5
+  ) %>%
+  mutate(
+    n = row_number()
+  ) %>%
+  write_csv(
+    "data/decisions_to_investigate/resl_non-conservation_ENGO_plt_decisions.csv",
+  )
+
+set.seed(1234)
+# conservation cases brought by ENGOs
+resl %>%
+  mutate(
+    n_rand = runif(n =3937, max = 1000)
+  ) %>%
+  filter(
+    #ooc_mc1 == "Waste & Pollution",
+    ooc_mc1 == "Conservation",
+    PLT_typ_NGO == 1,
+    #n_rand <= 112.5
+  ) %>%
+  mutate(
+    n = row_number()
+  ) %>%
+  write_csv(
+    "data/decisions_to_investigate/resl_conservation_ENGO_plt_decisions.csv"
+  )
+
+# compare non-conservation cases brought by ENGOs to other cases
+resl <- resl %>%
+  mutate(
+    PLT_typ_ooc_simp = case_when(
+      PLT_typ_NGO == 1 & ooc_mc1 != "Conservation" ~ "Non-conservation conflicts brought by ENGOs",
+      TRUE ~ "All other conflicts"
+    ),
+    PLT_typ_ooc = case_when(
+      PLT_typ_NGO == 1 & ooc_mc1 != "Conservation" ~ "Non-conservation conflicts brought by ENGOs",
+      PLT_typ_NGO == 1 & ooc_mc1 == "Conservation" ~ "Conservation conflicts brought by ENGOs",
+      PLT_typ_NGO == 0 & ooc_mc1 != "Conservation" ~ "Non-conservation conflicts brought by all other plaintiff types",
+      PLT_typ_NGO == 0 & ooc_mc1 == "Conservation" ~ "Conservation conflicts brought by all other plaintiff types"
+    )
+  )
+
+# plot wins and losses by judicial ideology for non-conservation ENGO-plaintiff
+# cases. These are the cases driving statistical effects
+unique(resl$outcome)
+
+outcome_plot <- resl %>%
+  mutate(
+    outcome_num = case_when(
+      outcome == "plaintiff" ~ 1,
+      outcome == "defendant" ~ 0,
+      outcome == "mixed" ~ 1
+    ),
+    outcome_fac = as.factor(outcome_num)
+  ) %>%
+  filter(
+    #(PLT_typ_ooc == "Non-conservation conflicts brought by ENGOs"),# |
+      #PLT_typ_ooc == "Conservation conflicts brought by ENGOs"),
+    #PLT_typ_ooc == "Conservation conflicts brought by all other plaintiff types",
+    !is.na(outcome_fac)
+  ) %>%
+  group_by(
+    PLT_typ_ooc
+  ) %>%
+  mutate(
+    PLT_typ_ooc_n = n(),
+    PLT_typ_ooc_n_lab = str_c("n = ", PLT_typ_ooc_n)
+  ) %>%
+  ungroup()
+
+outcome_plot %>%
+  ggplot(
+    aes(
+      x = imputed.dime.cfscore,
+      color = imputed.dime.cfscore
+    )
+  ) +
+  geom_point(
+    aes(
+      y = outcome_num,
+    ),
+    position = position_jitter(
+      seed = 1234,
+      height = 0.05
+    ),
+    alpha = 0.7
+  ) +
+  geom_density(
+    aes(
+      group = outcome_fac,
+      fill = outcome_fac
+    ),
+    alpha = 0.5
+  ) + 
+  geom_smooth(
+    aes(
+      y = outcome_num
+    ),
+    method = "lm"
+  ) +
+  geom_text(
+    data = outcome_plot %>%
+      group_by(PLT_typ_ooc) %>%
+      filter(
+        row_number() == 1
+      ),
+    aes(
+      x = 1,
+      y = .825,
+      label = PLT_typ_ooc_n_lab
+    ),
+    color = "#000000"
+  ) +
+  scale_color_viridis_c() +
+  #scale_color_grey()
+  scale_fill_grey() +
+  labs(
+    x = "Judicial Ideology (imputed DIME score)\n(- <-- liberal  conservative --> +)",
+    y = "Outcome (1 = plaintiff win)",
+    color = "Judicial Ideology\n(DIME score)",
+    fill = "Outcome\n(1 = plaintiff win)",
+    caption = "Note: Mixed outcomes coded as PLT wins."
+  ) + 
+  facet_wrap(
+    vars(PLT_typ_ooc)
+  ) +
+  theme_linedraw()
+
+ggsave(
+  "Bivariate_plt_wins_by_plt_typ_and_ideology_color.png",
+  units = "mm",
+  width = 300,
+  height =  200,
+  path = "Figures"
+)
+  
+
+# plot most common statutes in conflicts brought by different plaintiff types/
+# focused on different kinds of nature 
+resl %>%
+  # drop biz-biz conflicts
+  filter(
+    !(str_detect(PLT_typ, "BIZ") & str_detect(DEF_typ, "BIZ"))
+  ) %>%
+  select(PLT_typ_ooc, statute) %>%
+  filter(
+    !is.na(PLT_typ_ooc)
+  ) %>%
+  # convert stautes to list
+  mutate(
+    statute = str_split(statute,"%")
+  ) %>%
+  # spread list values into unique columns
+  unnest_wider(
+    statute,
+    names_sep = "_"
+  ) %>%
+  # trim and leading or trailing white space from statutes
+  mutate(
+    across(
+        statute_1:statute_11,
+        str_trim
+    )
+  ) %>%
+  pivot_longer(
+    cols = statute_1:statute_11,
+    names_to = "number",
+    values_to = "statute",
+    values_drop_na = TRUE
+    ) %>%
+  select(
+    -number
+  ) %>%
+  group_by(
+    PLT_typ_ooc
+  ) %>%
+  mutate(
+    tot = n()
+  ) %>%
+  group_by(
+    PLT_typ_ooc, statute
+  ) %>%
+  mutate(
+    n = n(),
+    pct = round(n/tot*100,1)
+  ) %>%
+  filter(
+    row_number() == 1
+  ) %>%
+  group_by(
+    PLT_typ_ooc
+  ) %>%
+  arrange(
+    PLT_typ_ooc, desc(pct)
+  ) %>%
+  mutate(
+    rank = row_number()
+  ) %>%
+  filter(
+    rank <= 15
+  ) %>%
+  arrange(
+    PLT_typ_ooc, pct
+  ) %>%
+  mutate(
+    rank = row_number(),
+    rank = factor(
+      x = rank,
+      labels = statute
+    )
+  ) %>%
+  ggplot(
+    aes(
+      y = reorder_within(rank, by = pct, within = PLT_typ_ooc),
+      x = pct
+    )
+  ) +
+  geom_bar(
+    stat = "identity"
+  ) +
+  geom_text(
+    aes(
+      label = pct
+    ),
+    hjust = -.2
+  ) + 
+  scale_y_reordered() + # remove facet name appending
+  labs(
+    x = "Percent of Decisions",
+    y = "Statute"
+  ) + 
+  facet_wrap(
+    vars(PLT_typ_ooc),
+    scales = "free_y"
+  ) +
+  coord_cartesian(xlim = c(0, 41)) +
+  theme_linedraw()
+
+ggsave(
+  "most_common_statutes_by_plt_and_nature.png",
+  units = "mm",
+  width = 300,
+  height =  200,
+  path = "Figures"
+)
+
+
+# plot most common agencies in conflicts brought by different plaintiff types/
+# focused on different kinds of nature 
+resl %>%
+  # drop biz-biz conflicts
+  filter(
+    !(str_detect(PLT_typ, "BIZ") & str_detect(DEF_typ, "BIZ"))
+  ) %>%
+  select(PLT_typ_ooc, agy) %>%
+  filter(
+    !is.na(PLT_typ_ooc)
+  ) %>%
+  # convert stautes to list
+  mutate(
+    agy = str_split(agy,"%")
+  ) %>%
+  # spread list values into unique columns
+  unnest_wider(
+    agy,
+    names_sep = "_"
+  ) %>%
+  # trim and leading or trailing white space from statutes
+  mutate(
+    across(
+      agy_1:agy_5,
+      str_trim
+    )
+  ) %>%
+  pivot_longer(
+    cols = agy_1:agy_5,
+    names_to = "number",
+    values_to = "agency",
+    values_drop_na = TRUE
+  ) %>%
+  select(
+    -number
+  ) %>%
+  group_by(
+    PLT_typ_ooc
+  ) %>%
+  mutate(
+    tot = n()
+  ) %>%
+  group_by(
+    PLT_typ_ooc, agency
+  ) %>%
+  mutate(
+    n = n(),
+    pct = round(n/tot*100,1)
+  ) %>%
+  filter(
+    row_number() == 1
+  ) %>%
+  group_by(
+    PLT_typ_ooc
+  ) %>%
+  arrange(
+    PLT_typ_ooc, desc(pct)
+  ) %>%
+  mutate(
+    rank = row_number()
+  ) %>%
+  filter(
+    rank <= 15
+  ) %>%
+  arrange(
+    PLT_typ_ooc, pct
+  ) %>%
+  mutate(
+    rank = row_number(),
+    rank = factor(
+      x = rank,
+      labels = agency
+    )
+  ) %>%
+  ggplot(
+    aes(
+      y = reorder_within(rank, by = pct, within = PLT_typ_ooc),
+      x = pct
+    )
+  ) +
+  geom_bar(
+    stat = "identity"
+  ) +
+  geom_text(
+    aes(
+      label = pct
+    ),
+    hjust = -.2
+  ) + 
+  scale_y_reordered() + # remove facet name appending
+  labs(
+    x = "Percent of Decisions",
+    y = "Agency"
+  ) + 
+  facet_wrap(
+    vars(PLT_typ_ooc),
+    scales = "free_y"
+  ) +
+  coord_cartesian(xlim = c(0, 55)) +
+  theme_linedraw()
+
+ggsave(
+  "most_common_agencies_by_plt_and_nature.png",
+  units = "mm",
+  width = 300,
+  height =  200,
+  path = "Figures"
+)
+ 
+
+  # plot most common defendants in conflicts brought by different plaintiff types/
+  # focused on different kinds of nature 
+  resl %>%
+    # drop biz-biz conflicts
+    filter(
+      !(str_detect(PLT_typ, "BIZ") & str_detect(DEF_typ, "BIZ"))
+    ) %>%
+    select(PLT_typ_ooc, DEF_typ_all) %>%
+    filter(
+      !is.na(PLT_typ_ooc)
+    ) %>%
+    # convert defendant types to list
+    mutate(
+      DEF_typ_all = str_split(DEF_typ_all,"%")
+    ) %>%
+    # spread list values into unique columns
+    unnest_wider(
+      DEF_typ_all,
+      names_sep = "_"
+    ) %>%
+    # trim and leading or trailing white space from statutes
+    mutate(
+      across(
+        DEF_typ_all_1:DEF_typ_all_6,
+        str_trim
+      )
+    ) %>%
+    pivot_longer(
+      cols = DEF_typ_all_1:DEF_typ_all_6,
+      names_to = "number",
+      values_to = "DEF_typ",
+      values_drop_na = TRUE
+    ) %>%
+    select(
+      -number
+    ) %>%
+    group_by(
+      PLT_typ_ooc
+    ) %>%
+    mutate(
+      tot = n()
+    ) %>%
+    group_by(
+      PLT_typ_ooc, DEF_typ
+    ) %>%
+    mutate(
+      n = n(),
+      pct = round(n/tot*100,1)
+    ) %>%
+    filter(
+      row_number() == 1
+    ) %>%
+    group_by(
+      PLT_typ_ooc
+    ) %>%
+    arrange(
+      PLT_typ_ooc, desc(pct)
+    ) %>%
+    mutate(
+      rank = row_number()
+    ) %>%
+    filter(
+      rank <= 15
+    ) %>%
+    arrange(
+      PLT_typ_ooc, pct
+    ) %>%
+    mutate(
+      rank = row_number(),
+      rank = factor(
+        x = rank,
+        labels = DEF_typ
+      )
+    ) %>%
+    ggplot(
+      aes(
+        y = reorder_within(rank, by = pct, within = PLT_typ_ooc),
+        x = pct
+      )
+    ) +
+    geom_bar(
+      stat = "identity"
+    ) +
+    geom_text(
+      aes(
+        label = pct
+      ),
+      hjust = -.2
+    ) + 
+    scale_y_reordered() + # remove facet name appending
+    labs(
+      x = "Percent of Decisions",
+      y = "Defendant Type"
+    ) + 
+    facet_wrap(
+      vars(PLT_typ_ooc),
+      scales = "free_y"
+    ) +
+    coord_cartesian(xlim = c(0, 90)) +
+    theme_linedraw()
+  
+  ggsave(
+    "most_common_defendnat types_by_plt_and_nature.png",
+    units = "mm",
+    width = 300,
+    height =  200,
+    path = "Figures"
+  )
+
+
+# Generate list of most common plaintiff names brought by different plaintiff types/
+# focused on different kinds of nature 
+test <- resl %>%
+  # drop biz-biz conflicts
+  filter(
+    !(str_detect(PLT_typ, "BIZ") & str_detect(DEF_typ, "BIZ"))
+  ) %>%
+  select(PLT_typ_ooc, PLT) %>%
+  filter(
+    !is.na(PLT)
+  ) %>%
+  # convert PLT to list
+  mutate(
+    PLT = str_split(PLT,"%")
+  ) %>%
+  # spread list values into unique columns
+  unnest_wider(
+    PLT,
+    names_sep = "_"
+  ) %>%
+  # trim and leading or trailing white space from statutes
+  mutate(
+    across(
+      PLT_1:PLT_220,
+      str_trim
+    )
+  ) %>%
+  pivot_longer(
+    cols = PLT_1:PLT_220,,
+    names_to = "number",
+    values_to = "PLT",
+    values_drop_na = TRUE
+  ) %>%
+  select(
+    -number
+  ) %>%
+  group_by(
+    PLT_typ_ooc
+  ) %>%
+  mutate(
+    tot = n()
+  ) %>%
+  group_by(
+    PLT_typ_ooc, PLT
+  ) %>%
+  mutate(
+    n = n(),
+    pct = round(n/tot*100,1)
+  ) %>%
+  filter(
+    row_number() == 1
+  ) %>%
+  group_by(
+    PLT_typ_ooc
+  ) %>%
+  arrange(
+    PLT_typ_ooc, desc(pct)
+  ) %>%
+  mutate(
+    rank = row_number()
+  ) %>%
+  filter(
+    rank <= 100
+  ) %>%
+  arrange(
+    PLT_typ_ooc, pct
+  ) %>%
+  mutate(
+    rank = row_number(),
+    rank = factor(
+      x = rank,
+      labels = DEF_typ
+    )
+  ) %>%
+  ggplot(
+    aes(
+      y = reorder_within(rank, by = pct, within = PLT_typ_ooc),
+      x = pct
+    )
+  ) +
+  geom_bar(
+    stat = "identity"
+  ) +
+  geom_text(
+    aes(
+      label = pct
+    ),
+    hjust = -.2
+  ) + 
+  scale_y_reordered() + # remove facet name appending
+  labs(
+    x = "Percent of Decisions",
+    y = "Defendant Type"
+  ) + 
+  facet_wrap(
+    vars(PLT_typ_ooc),
+    scales = "free_y"
+  ) +
+  coord_cartesian(xlim = c(0, 90)) +
+  theme_linedraw()
+
+ggsave(
+  "most_common_defendnat types_by_plt_and_nature.png",
+  units = "mm",
+  width = 300,
+  height =  200,
+  path = "Figures"
+)

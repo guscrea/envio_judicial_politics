@@ -321,7 +321,16 @@ win_los_reg <- function(
       "yr_file",
       "Prez",
       "prez_name",
-      "PLT_typ2",
+      "PLT_typ_IND", # ENGO is ref
+      "PLT_typ_STA",
+      "PLT_typ_BIZ",
+      "PLT_typ_FED",
+      "PLT_typ_OTH",
+      "DEF_typ_IND", # ENGO is ref
+      "DEF_typ_STA",
+      "DEF_typ_BIZ",
+      "DEF_typ_FED",
+      "DEF_typ_OTH",
       "REGION",
       "gender",
       "age_at_term",
@@ -362,14 +371,22 @@ win_los_reg <- function(
     #filter(
     #  !is.na(REGION)
     #) %>%
-    pivot_wider(
-      names_from = PLT_typ2,
-      values_from = value,
-      values_fill = 0
-    ) %>%
-    mutate(
-      value = 1,
-    ) %>%
+    {
+      if(RESL == FALSE){
+        pivot_wider(
+          .,
+          names_from = PLT_typ2,
+          values_from = value,
+          values_fill = 0
+        ) %>%
+          mutate(
+            value = 1,
+          )
+      } else if (RESL == TRUE){
+        .
+      }
+    } %>%
+   
     pivot_wider(
       names_from = REGION,
       values_from = value,
@@ -2315,7 +2332,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2330,7 +2351,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2345,7 +2370,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2360,7 +2389,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2375,7 +2408,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2390,7 +2427,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2405,7 +2446,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2420,7 +2465,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2435,7 +2484,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2450,7 +2503,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           ooc_mc1 +
           gender +
@@ -2485,7 +2542,7 @@ win_los_reg <- function(
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2503,7 +2560,7 @@ win_los_reg <- function(
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2521,7 +2578,7 @@ win_los_reg <- function(
           jcs.score.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2539,7 +2596,7 @@ win_los_reg <- function(
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2557,7 +2614,7 @@ win_los_reg <- function(
           pres.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2575,7 +2632,7 @@ win_los_reg <- function(
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2593,7 +2650,7 @@ win_los_reg <- function(
           senscore.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2611,7 +2668,7 @@ win_los_reg <- function(
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2629,7 +2686,7 @@ win_los_reg <- function(
           state.delegation.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2647,7 +2704,7 @@ win_los_reg <- function(
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "FED"
+            PLT_typ_FED == 1
           ),
         family = 'binomial'
       )
@@ -2673,7 +2730,7 @@ win_los_reg <- function(
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2691,7 +2748,7 @@ win_los_reg <- function(
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2709,7 +2766,7 @@ win_los_reg <- function(
           jcs.score.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2727,7 +2784,7 @@ win_los_reg <- function(
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2745,7 +2802,7 @@ win_los_reg <- function(
           pres.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2763,7 +2820,7 @@ win_los_reg <- function(
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2781,7 +2838,7 @@ win_los_reg <- function(
           senscore.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2799,7 +2856,7 @@ win_los_reg <- function(
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2817,7 +2874,7 @@ win_los_reg <- function(
           state.delegation.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2835,7 +2892,7 @@ win_los_reg <- function(
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "NGO"
+            PLT_typ_NGO == 1
           ),
         family = 'binomial'
       )
@@ -2861,7 +2918,7 @@ win_los_reg <- function(
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -2879,7 +2936,7 @@ win_los_reg <- function(
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -2897,7 +2954,7 @@ win_los_reg <- function(
           jcs.score.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -2915,7 +2972,7 @@ win_los_reg <- function(
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -2933,7 +2990,7 @@ win_los_reg <- function(
           pres.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -2951,7 +3008,7 @@ win_los_reg <- function(
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -2969,7 +3026,7 @@ win_los_reg <- function(
           senscore.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -2987,7 +3044,7 @@ win_los_reg <- function(
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -3005,7 +3062,7 @@ win_los_reg <- function(
           state.delegation.dw,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -3023,7 +3080,7 @@ win_los_reg <- function(
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
-            PLT_typ == "BIZ"
+            PLT_typ_BIZ == 1
           ),
         family = 'binomial'
       )
@@ -3040,7 +3097,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3049,7 +3110,9 @@ win_los_reg <- function(
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            #ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3058,7 +3121,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3067,7 +3134,9 @@ win_los_reg <- function(
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3076,7 +3145,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3085,7 +3158,9 @@ win_los_reg <- function(
           jcs.score.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3094,7 +3169,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3103,7 +3182,9 @@ win_los_reg <- function(
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3112,7 +3193,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3121,7 +3206,9 @@ win_los_reg <- function(
           pres.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3130,7 +3217,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3139,7 +3230,9 @@ win_los_reg <- function(
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3148,7 +3241,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3157,7 +3254,9 @@ win_los_reg <- function(
           senscore.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3166,7 +3265,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3175,7 +3278,9 @@ win_los_reg <- function(
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3184,7 +3289,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3193,7 +3302,9 @@ win_los_reg <- function(
           state.delegation.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            # ooc_mc1 == "Waste & Pollution" # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3202,7 +3313,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3211,7 +3326,9 @@ win_los_reg <- function(
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Waste & Pollution"
+            #ooc_mc1 == "Waste & Pollution", # affirmative w&p cases
+            ooc_mc1 != "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3228,7 +3345,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3237,7 +3358,8 @@ win_los_reg <- function(
           party.affiliation.of.president,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3246,7 +3368,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          #PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3255,7 +3381,8 @@ win_los_reg <- function(
           imputed.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3264,7 +3391,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3273,7 +3404,8 @@ win_los_reg <- function(
           jcs.score.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3282,7 +3414,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3291,7 +3427,8 @@ win_los_reg <- function(
           jcs.cfscore.cf,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3300,7 +3437,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3309,7 +3450,8 @@ win_los_reg <- function(
           pres.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3318,7 +3460,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3327,7 +3473,8 @@ win_los_reg <- function(
           pres.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3336,7 +3483,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3345,7 +3496,8 @@ win_los_reg <- function(
           senscore.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3354,7 +3506,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3363,7 +3519,8 @@ win_los_reg <- function(
           senscore.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3372,7 +3529,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3381,7 +3542,8 @@ win_los_reg <- function(
           state.delegation.dw,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3390,7 +3552,11 @@ win_los_reg <- function(
         PLT_wl ~ dplyr::lead(Prez, n = 0) +
           #prez_name + 
           yr_file +
-          PLT_typ2 +
+          PLT_typ_IND + # ENGO is ref
+          PLT_typ_STA + 
+          PLT_typ_BIZ + 
+          PLT_typ_FED +
+          PLT_typ_OTH +
           REGION +
           #ooc_mc1 +
           gender +
@@ -3399,7 +3565,8 @@ win_los_reg <- function(
           state.delegation.dime.cfscore,
         data = reg_df %>%
           filter(
-            ooc_mc1 == "Conservation"
+            ooc_mc1 == "Conservation",
+            #PLT_typ != "NGO"
           ),
         family = 'binomial'
       )
@@ -3417,7 +3584,7 @@ win_los_reg <- function(
     # clean up axis labels list
     axis_labels_list <- axis_labels_list %>%
       str_remove_all(
-        "REGION|PLT_typ2|party.affiliation.of.president|dplyr::lead\\(|, n = 0\\)R"
+        "REGION|PLT_typ2|PLT_typ_|party.affiliation.of.president|dplyr::lead\\(|, n = 0\\)R"
       ) %>%
       str_to_title() %>%
       str_replace_all(
@@ -3479,6 +3646,24 @@ win_los_reg <- function(
       ) %>%
       str_replace_all(
         "Ooc_mc1energy & Mineral Resources", "Energy & Mineral Resources"
+      ) %>%
+      str_replace_all(
+        "PLT_typ-STA1", "State Government"
+      ) %>%
+      str_replace_all(
+        "PLT_typ_LOC1", "Local Government"
+      ) %>%
+      str_replace_all(
+        "PLT_typ_BIZ1", "Firms and Trade Associations"
+      ) %>%
+      str_replace_all(
+        "PLT_typ_FED1", "Federal Government"
+      ) %>%
+      str_replace_all(
+        "PLT_typ_IND1", "Individuals"
+      ) %>%
+      str_replace_all(
+        "PLT_typ_OTH1", "Other"
       )
     
     # remove Plains

@@ -24,6 +24,12 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
         term == "PLT_typ2Local Government" ~ "Local Government",
         term == "PLT_typ2Other" ~ "Other",
         term == "PLT_typ2State Government" ~ "State Government",
+        term == "PLT_typ_FED1" ~ "Federal Government",
+        term == "PLT_typ_BIZ1" ~ "Firms and Trade Associations",
+        term == "PLT_typ_IND1" ~ "Individuals",
+        term == "PLT_typ_LOC1" ~ "Local Government",
+        term == "PLT_typ_OTH1" ~ "Other",
+        term == "PLT_typ_STA1" ~ "State Government",
         term == "REGIONNORTHEAST/MID-ATLANTIC" ~ "Northeast & Mid-Atlantic",
         term == "REGIONPACIFIC" ~ "Pacific",
         term == "REGIONPLAINS" ~ "Plains",
@@ -54,7 +60,7 @@ tidy_results <- function(m, m_name,judges,judge_pv = NULL){
         term == "senscore.dw" ~ "Senate Del. Score (DW)",
         term == "senscore.dime.cfscore" ~ "Senate Del. Score (CF)",
         term == "state.delegation.dw" ~ "State Del. Score (DW)",
-        term == "state.delegation.dime.cfscore" ~ "State Del. Score (CF)",
+        term == "state.delegation.dime.cfscore" ~ "State Del. Score (CF)"
       ),
       # round estimates, std errors to third, fourth decimal
       estimate_r = round(estimate, 4),
