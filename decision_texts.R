@@ -205,7 +205,7 @@ words_dis_prop_C <- ENGO_non_con_dec_resl_anal %>%
   # capture uncommonly frequent words in L or C
   filter(
     C_norm > 2 &
-      C_to_L > 1.1
+      C_to_L > 1.1305
   ) %>%
   arrange(
     desc(C_to_L)

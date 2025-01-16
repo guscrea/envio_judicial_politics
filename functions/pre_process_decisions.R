@@ -4,13 +4,13 @@
 # inputs
 # folder = in nlp directory to look in (include trailing slash in name!)
 # file_name = appropriately formatted file name for decison text, located in
-# folder above.
+#    folder above.
 # i = starting iteration number
 
 # for testing
-i = 163
-file_name = files[i]
-folder = "ENGO_Non_Conservation_Decisions/"
+# i = 163
+# file_name = files[i]
+# folder = "ENGO_Non_Conservation_Decisions/"
 
 
 decison_preprocess <- function(folder,file_name,i){
