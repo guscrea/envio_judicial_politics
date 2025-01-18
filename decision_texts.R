@@ -1,8 +1,16 @@
 library(tidyverse)
 library(tidytext)
-library(SnowballC)
 library(striprtf)
 library(patchwork)
+library(tm)
+library(SnowballC)
+library(Rtsne)
+library(rsvd)
+library(geometry)
+library(stm)
+library(igraph)
+
+# read meta-data (RESL data) in and build file paths for decisions ####
 
 # read in list of ENGO-plaintiff non-conservation cases; build file name to match 
 # naming convention used by LexisNexis in downloaded decision files
@@ -33,9 +41,9 @@ files <- unique(ENGO_non_con$file_name)
 # for testing, truncate list of file name to first 20
 #files <- files[1:20]
 
-# read in and process text for decisions ####
+# pre-process decisions ####
 
-# call function to pre-process decision texts
+# call function to pre-process decision texts into tidy foramt
 source("functions/pre_process_decisions.R")
 
 # loop through list of decision texts; pre_process text for each. This geneates a list of
@@ -61,7 +69,7 @@ ENGO_non_con_dec_resl <- left_join(
 # get list of missing decisions
 ENGO_non_con_dec_missing <- ENGO_non_con_dec_resl %>%
   filter(
-    is.na(line)
+    is.na(text)
   )
 
 # write out missing decisions
@@ -71,44 +79,75 @@ write_csv(
 )
 
 
-# preliminary analysis #####
-ENGO_non_con_dec_resl_anal <- ENGO_non_con_dec_resl %>%
-  #select(
-    # word,
-    # n_des,
-    # file_name,
-    # ID,
-    # case_name,
-    # url,
-    # cite,
-    # DOCKET,
-    # court,
-    # TERMDATE,
-    # PLT,
-    # PLT_typ,
-    # PLT_typ_all,
-    # DEF,
-    # DEF_typ,
-    # DEF_typ_all,
-    # judge,
-    # outcome,
-    # agy,
-    # statute,
-    # species,
-    # judge_clean,
-    # nid,
-    # jid,
-    # president.name,
-    # party.affiliation.of.president,
-    # imputed.dime.cfscore,
-    # jcs.score.dw,
-    # pres.dw,
-    # yr_file,
-    # FILEDATE,
-    # REGION,
-    # age_at_term,
-    # green_gen
-  #) %>%
+# preliminary (word frequency count) analysis #####
+
+# transform decision text into tidy format
+
+
+# make text of decision tidy
+ENGO_non_con_dec_resl_tdy <- ENGO_non_con_dec_resl %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+
+# get rid of stop words
+data(stop_words)
+ENGO_non_con_dec_resl_tdy <- ENGO_non_con_dec_resl_tdy %>%
+  anti_join(stop_words, by = join_by(word))
+
+# stem words; remove any remaining punctuation
+ENGO_non_con_dec_resl_tdy <- ENGO_non_con_dec_resl_tdy %>%
+  mutate(
+    word = wordStem(word),
+    word = str_remove_all(word, "[[:punct:]]")
+  )
+
+# count words in each decision
+ENGO_non_con_dec_resl_tdy <- ENGO_non_con_dec_resl_tdy %>%
+  group_by(
+    file_name, word
+  ) %>%
+  mutate(
+    n_des = n()
+  ) %>%
+  ungroup()
+
+ENGO_non_con_dec_resl_tdy_anal <- ENGO_non_con_dec_resl_tdy %>%
+  select(
+    word,
+    n_des,
+    file_name,
+    ID,
+    case_name,
+    url,
+    cite,
+    DOCKET,
+    court,
+    TERMDATE,
+    PLT,
+    PLT_typ,
+    PLT_typ_all,
+    DEF,
+    DEF_typ,
+    DEF_typ_all,
+    judge,
+    outcome,
+    agy,
+    statute,
+    species,
+    judge_clean,
+    nid,
+    jid,
+    president.name,
+    party.affiliation.of.president,
+    imputed.dime.cfscore,
+    jcs.score.dw,
+    pres.dw,
+    yr_file,
+    FILEDATE,
+    REGION,
+    age_at_term,
+    green_gen
+  ) %>%
   mutate(
     dime_d = case_when(
       imputed.dime.cfscore <= 0 ~ "L",
@@ -169,9 +208,9 @@ ENGO_non_con_dec_resl_anal <- ENGO_non_con_dec_resl %>%
   ungroup()
 
 # replace all -Inf with NA
-ENGO_non_con_dec_resl_anal[ENGO_non_con_dec_resl_anal == -Inf] <- NA
+ENGO_non_con_dec_resl_tdy_anal[ENGO_non_con_dec_resl_tdy_anal == -Inf] <- NA
 
-ENGO_non_con_dec_resl_anal <- ENGO_non_con_dec_resl_anal %>%
+ENGO_non_con_dec_resl_tdy_anal <- ENGO_non_con_dec_resl_tdy_anal %>%
   mutate(
     L_norm = n_L/num_desc_L,
     C_norm = n_C/num_desc_C,
@@ -183,7 +222,7 @@ ENGO_non_con_dec_resl_anal <- ENGO_non_con_dec_resl_anal %>%
 
 
 # capture uncommonly frequent words among L decisions
-words_dis_prop_L <- ENGO_non_con_dec_resl_anal %>%
+words_dis_prop_L <- ENGO_non_con_dec_resl_tdy_anal %>%
   filter(
     L_norm > 2 &
       L_to_C > 1.3
@@ -201,7 +240,7 @@ words_dis_prop_L <- ENGO_non_con_dec_resl_anal %>%
   )
 
 # capture uncommonly frequent words among C judge decisions
-words_dis_prop_C <- ENGO_non_con_dec_resl_anal %>%
+words_dis_prop_C <- ENGO_non_con_dec_resl_tdy_anal %>%
   # capture uncommonly frequent words in L or C
   filter(
     C_norm > 2 &
@@ -236,7 +275,7 @@ L_word_freq_plot <- words_dis_prop_L %>%
     ),
     hjust = -.2
   ) + 
-  annotate(
+  ggplot2::annotate(
     "segment",
     x = 1,
     xend = 1,
@@ -281,7 +320,7 @@ C_word_freq_plot <- words_dis_prop_C %>%
     ),
     hjust = -.2
   ) + 
-  annotate(
+  ggplot2::annotate(
     "segment",
     x = 1,
     xend = 1,
@@ -325,3 +364,188 @@ ggsave(
   
 
 
+
+# implementing structural topic model (stm) ####
+
+# first, pare down to text, minimal metadata: year of termination, judge
+# ideology, document ID, substantive focus
+
+ENGO_non_con_stm <- ENGO_non_con_dec_resl %>%
+  select(
+    ID, yr_file, ooc_mc1, imputed.dime.cfscore, text
+  ) %>%
+  # make simple liberal-conservative binary
+  mutate(
+    dime_d = case_when(
+      imputed.dime.cfscore <= 0 ~ "L",
+      imputed.dime.cfscore > 0 ~ "C"
+      ),
+    dime_d = as.factor(dime_d)
+    ) %>%
+  #remove decisions with no text (-31) and no ideology (-12) from 533 starting
+  filter(
+    !is.na(text), #
+    !is.na(imputed.dime.cfscore)
+  ) %>%
+  #capture intro of decision (first 1,000 characters)
+  mutate(
+    text_intro = str_sub(text, 1, 1000)
+  ) %>%
+  ungroup()
+
+# prepare data for stm model
+
+# build document -term matrix with meta data
+ENGO_non_con_stm_processed <- textProcessor(ENGO_non_con_stm$text, metadata = ENGO_non_con_stm)
+
+# examine nubmer of words that would be removed at various thresholds for inclusion
+plotRemoved(ENGO_non_con_stm_processed$documents, lower.thresh = seq(1, 200, by = 100))
+
+# not obvious that any words need to be removed... (make lower.thresh = 0)
+
+# drop uncommon words below threshold
+ENGO_non_con_stm_processed_prep <- prepDocuments(
+  ENGO_non_con_stm_processed$documents,
+  ENGO_non_con_stm_processed$vocab,
+  ENGO_non_con_stm_processed$meta,
+  lower.thresh = 2)
+
+# get a sense for how many topics
+# here we iterate through models from 5 to 50 topics. This takes a long time!
+storage <- searchK(ENGO_non_con_stm_processed_prep$documents,
+                   ENGO_non_con_stm_processed_prep$vocab,
+                   K = seq(5,50,1),
+                   prevalence =~ s(imputed.dime.cfscore),
+                   data =ENGO_non_con_stm_processed_prep$meta
+                   )
+
+# plot exclusivity v. semantic coherence
+findK <- storage$results %>%
+  mutate(
+    semcoh = as.numeric(semcoh),
+    exclus = as.numeric(exclus),
+    K = as.numeric(K)
+  )
+
+findK %>%
+  ggplot(
+    aes(
+      x = semcoh,
+      y = exclus,
+      color = K,
+    )
+  ) +
+  geom_point(
+    alpha = .5
+  ) +
+  geom_text(
+    aes(
+      label = K
+    )
+  ) +
+  scale_color_viridis_c() +
+  labs(
+    x = "Semantic Coherence",
+    y = "Exclusivity",
+    color = "K (num. topics)"
+  ) +
+  theme_linedraw()
+
+ggsave(
+  "excl_v_seman_coher_thresh_2_K_1_to_50_imputed_dime.png",
+  units = "mm",
+  width = 300,
+  height =  200,
+  path = "Figures"
+)
+
+# notes:
+
+# FOR 1 covariate, dime_d:
+
+# for prepDocuments lower.thresh = 0, K = 5 to 50, Execl v. Sem. Coher plot
+# suggests 24 (higher coherence) or maybe 26 (higher exclusivity) topics. There
+# are diminishing returns after 33-34 topics.
+
+# for prepDocuments lower.thresh = 2, K = 5 to 50, Execl v. Sem. Coher plot
+# suggests 16 (higher coherence) or maybe 17 (higher exclusivity) topics. There
+# are diminishing returns after 22 topics.
+
+
+
+# fit stm 
+# note: particularly with K = 0 and init.type = "Spectral", this
+# takes several minutes. This also yields 105 topics - WAY too many!
+ENGO_non_con_stm_fit <- stm(documents = ENGO_non_con_stm_processed_prep$documents,
+                            vocab = ENGO_non_con_stm_processed_prep$vocab,
+                            K = 16, # with init.type = "Spectral", K = 0 estimates an "optimal" number of topics...
+                            #prevalence =~ dime_d + s(yr_file),
+                            prevalence =~ s(imputed.dime.cfscore),
+                            max.em.its = 75,
+                            data = ENGO_non_con_stm_processed_prep$meta,
+                            init.type = "Spectral"
+                            )
+
+# explore stm results ####
+
+# look at corpus-level topic prevalence
+plot(ENGO_non_con_stm_fit, type = "summary", xlim = c(0, 0.3))
+
+# look at five topics:
+labelTopics(
+  ENGO_non_con_stm_fit,
+  c(7,13,15,5,16,11)
+)
+
+# as an example, look more closely at topic 13
+thoughts14 <- findThoughts(ENGO_non_con_stm_fit,
+                           texts = ENGO_non_con_stm$text_intro,
+                           n = 5,
+                           topics = 13)$docs[[1]]
+plotQuote(thoughts14, width = 150, main = "Topic 13 - Lands Conflicts")
+
+
+# examine topic-meta-data relation
+ENGO_non_con_stm_processed_prep$meta$dime_d <- as.factor(ENGO_non_con_stm_processed_prep$meta$dime_d)
+
+prep <- estimateEffect(1:16 ~ dime_d,
+                       ENGO_non_con_stm_fit,
+                       metadata = ENGO_non_con_stm_processed_prep$meta,
+                       uncertainty = "Global")
+# look at model resultss for each topic
+lapply(
+  seq(1,16,1),
+  summary,
+  object = prep
+  )
+
+# note:  in lower.thresh = 2, K = 16 model, topic 9 is
+# the only one that appears to be significant with respect
+# to dime_d. 
+
+# look at topic 9:
+labelTopics(
+  ENGO_non_con_stm_fit,
+  c(9)
+)
+
+# plot difference of moving from conservative to liberal decision for each topic
+# Note again, only topic 9 is significant
+plot(prep,
+     covariate = "dime_d",
+     #topics = c(5,11,6,16,9),
+     #topics = c(8,12,7),
+     model = ENGO_non_con_stm_fit,
+     method = "difference",
+     cov.value1 = "C", # check!
+     cov.value2 = "L",
+     xlab = "More Conservative ... More Liberal",
+     main = "Effect of Conservative vs. Liberal",
+     xlim = c(-0.1, 0.1),
+     labeltype = "prob" 
+     #labeltype = "custom", custom.labels = seq(1,16,1)
+)
+
+# network of topics (means of visualizing which topics appear together)
+mod.out.corr <- topicCorr(ENGO_non_con_stm_fit)
+plot(mod.out.corr)

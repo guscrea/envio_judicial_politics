@@ -7,6 +7,7 @@
 #    folder above.
 # i = starting iteration number
 
+
 # for testing
 # i = 163
 # file_name = files[i]
@@ -43,9 +44,8 @@ decison_preprocess <- function(folder,file_name,i){
      
      # build empty data frame with same components as data
      df_elements <- list(
-       line = NA,
-       word = NA,
-       n_des = NA,
+       i = i,
+       text = NA,
        file_name = file_name
      )
      
@@ -57,7 +57,7 @@ decison_preprocess <- function(folder,file_name,i){
      text <- read_rtf(file_path)
      
      # the next section of code identifies the start of the actual written
-     # opinion so that we can capture just that, and excluide all the leading
+     # opinion so that we can capture just that, and exclude all the leading
      # head notes that LexisNexis adds to the decision document.
   
     # find the first line that contains the word "Opinion" but do not include "Opinion "
@@ -111,36 +111,22 @@ decison_preprocess <- function(folder,file_name,i){
       text = text_op
     )
     
-    # make text of decision tidy
+    # collapse individual rows of text into single row (one long string), so
+    # that document text is in one row. Also remove head note references, e.g.
+    # [*12] or [**123]. Finally, add file name and document number (i), and drop
+    # line
     text_op <- text_op %>%
-      unnest_tokens(word, text)
-    
-    # get rid of stop words
-    data(stop_words)
-    text_op <- text_op %>%
-      anti_join(stop_words, by = join_by(word))
-    
-    # stem words; remove any remaining punctuation
-    text_op <- text_op %>%
+      summarise_all(toString) %>%
       mutate(
-        word = wordStem(word),
-        word = str_remove_all(word, "[[:punct:]]")
+        text = str_replace_all(text, "\\[\\*{1,4}\\d+\\]", ""),
+        file_name = file_name,
+        i = i
+      ) %>%
+      select(
+        i, text, file_name
       )
     
-    # count words; add file name as identifier to link to RESL data
-    text_op <- text_op %>%
-      group_by(
-        word
-      ) %>%
-      mutate(
-        n_des = n()
-      ) %>%
-      ungroup() %>%
-      mutate(
-        file_name = file_name
-      )
-    
-    #return tidy decision text df
+    #return decision text as a one-line dataframe
     return(text_op)
    }
 }
