@@ -1,0 +1,278 @@
+This file contains classfication results for conservation and non-conservation decision texts 
+from models including o4-mini, gpt-4o, and gpt-4.1 under setting of with or without few-shot prompting and different
+temperatures.
+
+o4-mini without few-shot: !!!!!!!!!!!!!!!!!!!!!!!!!!
+for conservation text:
+NA row
+Row 1 → Legal and Procedural
+Row 2 → Energy and Mineral Resources
+NA row
+Row 4 → Conservation
+Row 5 → Legal and Procedural
+Row 6 → Conservation
+Row 7 → Waste and Pollution
+Row 8 → Conservation
+Row 9 → Conservation
+Row 10 → Conservation
+Row 11 → Waste and Pollution
+Row 12 → Conservation
+Row 13 → Conservation
+Row 14 → Conservation
+NA row
+Row 16 → Conservation
+Row 17 → Legal and Procedural
+Row 18 → Conservation
+Row 19 → Conservation
+Row 20 → Conservation
+Row 21 → Conservation
+Row 22 → Waste and Pollution
+Row 23 → Conservation
+Row 24 → Waste and Pollution
+Row 25 → Legal and Procedural
+Row 26 → Legal and Procedural
+Row 27 → Waste and Pollution
+Row 28 → Energy and Mineral Resources
+Row 29 → Conservation
+Row 30 → Conservation
+16/28
+
+for non-conservation text
+Row 0 → Waste and Pollution
+Row 1 → Conservation
+Row 2 → Energy and Mineral Resources
+Row 3 → Military
+Row 4 → Waste and Pollution
+Row 5 → Conservation
+Row 6 → Waste and Pollution
+Row 7 → Legal and Procedural
+Row 8 → Energy and Mineral Resources
+Row 9 → Energy and Mineral Resources
+Row 10 → Energy and Mineral Resources
+Row 11 → Legal and Procedural
+Row 12 → Conservation
+Row 13 → Legal and Procedural
+Row 14 → Waste and Pollution
+Row 15 → Conservation
+Row 16 → Waste and Pollution
+Row 17 → Waste and Pollution
+4 misclassified
+
+
+
+
+gpt-4.1 without few-shot: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+for conservation text
+NA row
+Row 1 → Legal and Procedural
+Row 2 → Energy and Mineral Resources
+NA row
+Row 4 → Conservation
+Row 5 → Legal and Procedural
+Row 6 → Conservation
+Row 7 → Waste and Pollution
+Row 8 → Conservation
+Row 9 → Conservation
+Row 10 → Conservation
+Row 11 → Waste and Pollution
+Row 12 → Conservation
+Row 13 → Conservation
+Row 14 → Conservation
+NA row
+Row 16 → Conservation
+Row 17 → Conservation
+Row 18 → Conservation
+Row 19 → Conservation
+Row 20 → Conservation
+Row 21 → Conservation
+Row 22 → Waste and Pollution
+Row 23 → Conservation
+Row 24 → Waste and Pollution
+Row 25 → Conservation
+Row 26 → Conservation
+Row 27 → Waste and Pollution
+Row 28 → Energy and Mineral Resources
+Row 29 → Conservation
+Row 30 → Conservation
+19/28
+
+gpt-4o without few-shot !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+for conservation text
+NA row
+Row 1 → Legal and Procedural
+Row 2 → Energy and Mineral Resources
+NA row
+Row 4 → Conservation
+Row 5 → Legal and Procedural
+Row 6 → Conservation
+Row 7 → Conservation
+Row 8 → Conservation
+Row 9 → Conservation
+Row 10 → Conservation
+Row 11 → Legal and Procedural
+Row 12 → Conservation
+Row 13 → Conservation
+Row 14 → Conservation
+NA row
+Row 16 → Conservation
+Row 17 → Conservation
+Row 18 → Conservation
+Row 19 → Conservation
+Row 20 → Conservation
+Row 21 → Conservation
+Row 22 → Waste and Pollution
+Row 23 → Conservation
+Row 24 → Waste and Pollution
+Row 25 → Recreation
+Row 26 → Conservation
+Row 27 → Conservation
+Row 28 → Energy and Mineral Resources
+Row 29 → Conservation
+Row 30 → Conservation
+20/28
+
+
+gpt-4o w/o few shot temperature=0.0!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+for conservation text
+NA row
+Row 1 → Legal and Procedural
+Row 2 → Energy and Mineral Resources
+NA row
+Row 4 → Conservation
+Row 5 → Legal and Procedural
+Row 6 → Conservation
+Row 7 → Waste and Pollution
+Row 8 → Conservation
+Row 9 → Conservation
+Row 10 → Conservation
+Row 11 → Waste and Pollution
+Row 12 → Conservation
+Row 13 → Conservation
+Row 14 → Conservation
+NA row
+Row 16 → Conservation
+Row 17 → Conservation
+Row 18 → Conservation
+Row 19 → Conservation
+Row 20 → Conservation
+Row 21 → Conservation
+Row 22 → Conservation
+Row 23 → Conservation
+Row 24 → Waste and Pollution
+Row 25 → Recreational
+Row 26 → Legal and Procedural
+Row 27 → Conservation
+Row 28 → Energy and Mineral Resources
+Row 29 → Conservation
+Row 30 → Conservation
+19/28
+
+for non-conseration text
+Row 0 → Waste and Pollution
+Row 1 → Conservation
+Row 2 → Energy and Mineral Resources
+Row 3 → Military
+Row 4 → Waste and Pollution
+Row 5 → Conservation
+Row 6 → Waste and Pollution
+Row 7 → Legal and Procedural
+Row 8 → Energy and Mineral Resources
+Row 9 → Energy and Mineral Resources
+Row 10 → Energy and Mineral Resources
+Row 11 → Legal and Procedural
+Row 12 → Conservation
+Row 13 → Legal and Procedural
+Row 14 → Waste and Pollution
+Row 15 → Waste and Pollution
+Row 16 → Energy and Mineral Resources
+Row 17 → Waste and Pollution
+3 misclassified. 
+
+gpt4o w/o decision tree !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+for conservation text
+NA row
+Row 1 → Legal and Procedural
+Row 2 → Energy and Mineral Resources
+NA row
+Row 4 → Legal and Procedural
+Row 5 → Legal and Procedural
+Row 6 → Legal and Procedural
+Row 7 → Legal and Procedural
+Row 8 → Legal and Procedural
+Row 9 → Conservation
+Row 10 → Legal and Procedural
+Row 11 → Legal and Procedural
+Row 12 → Legal and Procedural
+Row 13 → Conservation
+Row 14 → Conservation
+NA row
+Row 16 → Conservation
+Row 17 → Legal and Procedural
+Row 18 → Conservation
+Row 19 → Legal and Procedural
+Row 20 → Conservation
+Row 21 → Legal and Procedural
+Row 22 → Waste and Pollution
+Row 23 → Conservation
+Row 24 → Legal and Procedural
+Row 25 → Legal and Procedural
+Row 26 → Legal and Procedural
+Row 27 → Legal and Procedural
+Row 28 → Conservation
+Row 29 → Legal and Procedural
+Row 30 → Conservation
+Row 31 → Conservation
+10/28
+
+
+o4mini with few shot(first 7 texts being the examples):
+conservation text:
+Row 7 → Waste and Pollution
+Row 8 → Conservation
+Row 9 → Conservation
+Row 10 → Conservation
+Row 11 → Waste and Pollution
+Row 12 → Conservation
+Row 13 → Conservation
+Row 14 → Conservation
+NA row
+Row 16 → Conservation
+Row 17 → Conservation
+Row 18 → Conservation
+Row 19 → Conservation
+Row 20 → Conservation
+Row 21 → Conservation
+Row 22 → Conservation
+Row 23 → Legal and Procedural
+Row 24 → Waste and Pollution
+Row 25 → Conservation
+Row 26 → Conservation
+Row 27 → Waste and Pollution
+Row 28 → Energy and Mineral Resources
+Row 29 → Conservation
+Row 30 → Conservation
+17/23 vs 14/23 w/o few shot
+
+non-conservation text:
+(more false positive in non-conservation texts classification)
+Row 0 → Waste and Pollution
+Row 1 → Conservation
+Row 2 → Energy and Mineral Resources
+Row 3 → Conservation
+Row 4 → Waste and Pollution
+Row 5 → Conservation
+Row 6 → Waste and Pollution
+Row 7 → Legal and Procedural
+Row 8 → Energy and Mineral Resources
+Row 9 → Energy and Mineral Resources
+Row 10 → Energy and Mineral Resources
+Row 11 → Legal and Procedural
+Row 12 → Conservation
+Row 13 → Conservation
+Row 14 → Waste and Pollution
+Row 15 → Waste and Pollution
+Row 16 → Waste and Pollution
+Row 17 → Waste and Pollution
+
+5 misclassified
+

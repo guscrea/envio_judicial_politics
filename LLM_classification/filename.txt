@@ -1,0 +1,29 @@
+#corresponding rows and filenames for the first 28 non-NA rows in the decision text
+Delaware Valley Conservation Asso. v. Resor_ 269 F. Supp. 181.RTF
+Colorado Envtl. Coalition v. BLM_ 932 F. Supp. 1247.RTF
+Pennsylvania Environmental Council_ Inc. v. Bartlett_ 315 F. Supp. 238.RTF
+Delaware v. Pennsylvania New York Cent. Transp. Co._ 323 F. Supp. 487.RTF
+Environmental Defense Fund_ Inc. v. Corps of Engineers of United States Army_ 325 F. Supp. 749.RTF
+Environmental Defense Fund v. Hardin_ 325 F. Supp. 1401.RTF
+Environmental Defense Fund_ Inc. v. Corps of Engineers of U. S. Army_ 325 F. Supp. 728.RTF
+Sierra Club v. Hardin_ 325 F. Supp. 99.RTF
+Upper Pecos Asso. v. Stans_ 328 F. Supp. 332.RTF
+Connecticut Action Now_ Inc. v. Roberts Plating Co._ 330 F. Supp. 695.RTF
+Citizens to Preserve Overton Park_ Inc. v. Volpe_ 335 F. Supp. 873.RTF
+Akers v. Resor_ 339 F. Supp. 1375.RTF
+Environmental Defense Fund v. Tennessee Valley Authority_ 339 F. Supp. 806.RTF
+Natural Resources Defense Council_ Inc. v. Grant_ 341 F. Supp. 356.RTF
+Environmental Defense Fund_ Inc. v. Corps of Engineers of United States Army_ 342 F. Supp. 1211.RTF
+Conservation Soc. of Southern Vermont_ Inc. v. Volpe_ 343 F. Supp. 761.RTF
+National Forest Preservation Group v. Butz_ 343 F. Supp. 696.RTF
+Sierra Club v. Froehlke_ 345 F. Supp. 440.RTF
+Environmental Defense Fund_ Inc. v. Froehlke_ 348 F. Supp. 338.RTF
+Sierra Club v. Mason_ 351 F. Supp. 419.RTF
+Sierra Club v. Volpe_ 351 F. Supp. 1002.RTF
+Keith v. Volpe_ 352 F. Supp. 1324.RTF
+National Forest Preservation Group v. Volpe_ 352 F. Supp. 123.RTF
+Stop H-3 Ass_n v. Volpe_ 353 F. Supp. 14.RTF
+Life of the Land v. Volpe_ 363 F. Supp. 1171.RTF
+Izaak Walton League v. St. Clair_ 353 F. Supp. 698.RTF
+Finish Allatoona_s Interstate Right_ Inc. v. Volpe_ 355 F. Supp. 933.RTF
+Natural Resources Defense Council_ Inc. v. Grant_ 355 F. Supp. 280.RTF

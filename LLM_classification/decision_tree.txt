@@ -1,0 +1,32 @@
+1. Is the judicial decision about recreation, like hiking or hunting or swimming, with no other reference to other environmental concerns?
+    Yes: Categorize judicial decision as "Recreation"
+    No: Go to #2
+2. Is the judicial decision about energy and mineral resources? I.e., does it mention oil; mining or drilling for fossil fuels or uranium; the transportation of energy resources, for example, by rail or truck or pipeline or transmission lines; energy production at a power plant; nuclear power facilities; etc.?
+    Yes: Categorize the decision as "Energy and Mineral Resources"
+    No: Go to #3
+3. Is the judicial decision primarily related to military activity, i.e. does it focus on activities related to the action of the U.S. Army, Navy, Air Force, etc.?
+    Yes: Categorize the decisions as "Military"
+    No: Go to #4
+4. Is the judicial decision about disaster recovery, i.e. does it focus on recovery efforts in response to hurricanes, floods, or wildfires, heavily discuss actions by the Federal Emergency Management agency (FEMA), etc.?
+    Yes: Categorize the decision as "Disaster Recovery"
+    No: Go to #5
+5. Does the judicial decision cite RCRA and/or CRCLA?
+    Yes: Go to #6
+    No: Go to #8
+6. Is the decision characterized by an overt or implied reference to human health, including discussion of drinking water, ground water, and/or other exposures of pollution to air, water, and soil with implications for human health? Or, alternatively, is the decisions's focus on animals, plants, ecosystems, or land use unrelated to human health? The latter may include discussions of pollution to air, water, and soil but with concern focused on animals, plants and ecosystems as such, without a stated or implied concern about human health.
+    Only human health: Categorize the decision as "Waste and Pollution"
+    Only animals, plants, ecosystems, or land use: Categorize the decision as "Conservation"
+    Both: Go to #7.
+    Neither: Go to #10.
+7. What is the primary focus of the judicial decision?
+    Human health, whether stated or implied: Categorize the decision as "Waste and Pollution"
+    Animals, plants, ecosystems, or land use: Categorize the decision as "Conservation"
+8. Does the judicial decision cites the Endangered Species Act (ESA)?
+    Yes: Categorize the decisions as "Conservation"
+    No: Go to #9
+9. Does the judicial decision discuss pollution or waste or dumping or dredging, for example in rivers or other waterways, or the emission of pollution into the air or atmosphere?
+    Yes: Go to #6 (Note: Many of these decisions will cite the Clean Air Act and Clean Water Act)
+    No: Go to #10
+10. Does the judicial decision focus on legal and procedural action without a strong focus on a substantively "environmental" issue? For example, does it focuses on legal-procedural matters without substantively discussing an environmental conflict or statute, like adding a plaintiff intervenor, defendant intervenor, requesting a change in venue, and so on?
+    Yes: Categorize the decision as "Legal and Procedural"
+    No: Categorize the decisions as "Unknown"
